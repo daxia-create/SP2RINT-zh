@@ -52,7 +52,8 @@ import datetime
 import psutil
 import torch
 
-# [中文注释] 实现 overfit_single_batch 功能；请结合调用处确认输入、输出和状态变化。
+# [单批次过拟合检查] 用一个固定 mini-batch 反复更新模型，检查网络能否把训练误差压到很低。
+# 若连单批次都无法拟合，应优先排查数据标签、前向传播、损失函数和梯度链路，而不是先调大数据集训练轮数。
 def overfit_single_batch(
     model: nn.Module,
     train_loader: DataLoader,
@@ -99,7 +100,9 @@ def overfit_single_batch(
             print(f"✅ Model successfully overfit the batch at iteration {i}!")
             break
 
-# [中文注释] 实现 update_admm_dual_variable 功能；请结合调用处确认输入、输出和状态变化。
+# [ADMM 对偶变量更新] 对每个光学层执行 u ← u + x − z。
+# x 是 DONN 当前的理想传输矩阵，z 是物理投影后 stitched_response；u 用来累积两者的约束偏差。
+# 该更新本身不求解 Maxwell 方程，而是 ADMM 外层优化中的对偶变量迭代。
 def update_admm_dual_variable(
     model: torch.nn.Module,
     stitched_response: List[torch.Tensor],
@@ -917,7 +920,8 @@ def project_to_implementable_subspace(
         return stitched_response.detach(), current_pillar_width
 
 
-# [中文注释] 执行训练或训练步骤；关注前向传播、损失、反向传播和优化器更新。
+# [DONN 训练循环] 对一个 epoch 的训练数据执行前向传播、分类损失、反向传播和优化器更新。
+# 与普通分类网络不同，本函数还会按配置间隔插入传输矩阵约束/物理投影相关步骤。
 def train(
     model: nn.Module,
     train_loader: DataLoader,
@@ -1214,7 +1218,8 @@ def train(
         raise NotImplementedError(f"Unknown reset_frequency: {configs.invdes.reset_frequency}")
 
 
-# [中文注释] 实现 validate 功能；请结合调用处确认输入、输出和状态变化。
+# [验证集评估] 切换到 eval 模式并关闭梯度，统计验证集损失与准确率；不更新网络参数。
+# end2end 模式下会临时打开 test_mode，使前向传播读取已缓存的传输矩阵。
 def validate(
     model: nn.Module,
     validation_loader: DataLoader,
@@ -1331,7 +1336,8 @@ def validate(
         #         plt.close()
 
 
-# [中文注释] 实现 test 功能；请结合调用处确认输入、输出和状态变化。
+# [测试集评估] 在独立测试集上计算损失和准确率；test_train_loader=True 时可返回训练集评估值，
+# 用于比较理想 DONN 与物理投影/校准后模型的性能差异。
 def test(
     model: nn.Module,
     test_loader: DataLoader,
@@ -1462,7 +1468,8 @@ def test(
         return class_meter.avg, accuracy
 
 
-# [中文注释] 程序入口：读取配置、构建对象并启动训练/仿真流程。
+# [程序入口] 读取配置，构建数据加载器、DONN、物理逆向设计对象、优化器和日志记录器。
+# 主循环按 epoch 执行训练、必要时进行物理投影、评估并保存训练模型和物理校准模型。
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("config", metavar="FILE", help="config file")
