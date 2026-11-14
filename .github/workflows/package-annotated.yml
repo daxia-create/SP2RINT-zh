@@ -1,0 +1,25 @@
+name: Package SP2RINT Chinese annotated source
+on:
+  push:
+    branches:
+      - chinese-annotated
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chinese-annotated
+      - name: Create source archive
+        run: |
+          zip -r SP2RINT_Chinese_Annotated.zip . \
+            -x ".git/*" \
+            -x ".github/*"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SP2RINT_Chinese_Annotated
+          path: SP2RINT_Chinese_Annotated.zip
+          if-no-files-found: error
