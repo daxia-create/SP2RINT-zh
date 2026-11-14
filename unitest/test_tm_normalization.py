@@ -1,3 +1,7 @@
+# 中文学习注释：实验/单元测试辅助脚本；仅增加说明，不修改原始执行逻辑。
+# 脚本用途：unitest/test_tm_normalization.py。运行前核对数据路径、配置、设备及输出目录。
+# 重点检查：实验变量、扫描范围、评价指标、绘图坐标/单位和结果保存位置。
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,6 +16,7 @@ from core.utils import DeterministicCtx
 from core.utils import probe_near2far_matrix
 sys.path.pop()
 
+# [中文注释] 实现 generate_smooth_curves；结合脚本目的确认输入、输出和评价量。
 def generate_smooth_curves(bs, length=480, num_waves=5, device="cpu"):
     """
     Generate a batch of smooth random curves using sine and cosine waves in PyTorch.

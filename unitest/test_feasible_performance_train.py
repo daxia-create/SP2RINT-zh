@@ -1,3 +1,7 @@
+# 中文学习注释：实验/单元测试辅助脚本；仅增加说明，不修改原始执行逻辑。
+# 脚本用途：unitest/test_feasible_performance_train.py。运行前核对数据路径、配置、设备及输出目录。
+# 重点检查：实验变量、扫描范围、评价指标、绘图坐标/单位和结果保存位置。
+
 #!/usr/bin/env python
 # coding=UTF-8
 import argparse
@@ -47,6 +51,7 @@ import datetime
 import psutil
 import torch
 
+# [中文注释] 实现 update_admm_dual_variable；结合脚本目的确认输入、输出和评价量。
 def update_admm_dual_variable(
     model: torch.nn.Module,
     stitched_response: List[torch.Tensor],
@@ -67,6 +72,7 @@ def update_admm_dual_variable(
         admm_vars['z_admm'][i] = stitched_response[i].detach()
         admm_vars['u_admm'][i] = admm_vars['u_admm'][i] + x - admm_vars['z_admm'][i]
 
+# [中文注释] 实现 transfer_weights；结合脚本目的确认输入、输出和评价量。
 def transfer_weights(src_model, tgt_model):
     """
     Transfers weights from src_model to tgt_model, skipping layers with mismatched sizes.
@@ -107,6 +113,7 @@ def transfer_weights(src_model, tgt_model):
     return None
     # return loaded_keys, skipped_keys
 
+# [中文注释] 实现 probe_full_tm；结合脚本目的确认输入、输出和评价量。
 def probe_full_tm(
     device,
     patched_metalens,
@@ -220,6 +227,7 @@ def probe_full_tm(
     # print(f"this is the time for probing the full wave response: {time_end - time_start}", flush=True)
     return full_wave_response
 
+# [中文注释] 实现 project_to_implementable_subspace；结合脚本目的确认输入、输出和评价量。
 def project_to_implementable_subspace(
         model, 
         model_test,
@@ -744,6 +752,7 @@ def project_to_implementable_subspace(
         lg.info(f"this is the current pillar width: {current_pillar_width}")
         return stitched_response.detach(), current_pillar_width
 
+# [中文注释] 实现 test；结合脚本目的确认输入、输出和评价量。
 def test(
     model: nn.Module,
     test_loader: DataLoader,
@@ -833,6 +842,7 @@ def test(
         return class_meter.avg, accuracy
 
 
+# [中文注释] 脚本入口：组织测试、参数扫描或结果可视化。
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("config", metavar="FILE", help="config file")

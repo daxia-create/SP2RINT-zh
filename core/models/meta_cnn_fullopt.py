@@ -1,3 +1,6 @@
+# 中文学习注释：本文件保持上游实现不变；以下说明用于帮助追踪模型职责、张量流和物理含义。
+# 模块定位：core/models/meta_cnn_fullopt.py。请结合调用处核对输入/输出维度、复数类型、归一化约定及梯度是否保留。
+
 from collections import OrderedDict
 from typing import List
 
@@ -14,11 +17,14 @@ from .layers.quantized_linear import QLinear
 __all__ = ["FullOptMetalens"]
 
 
+# [中文注释] 定义 FFT_FeatureExtractor 类，封装模型状态、参数和方法。
 class FFT_FeatureExtractor(nn.Module):
+    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(self, encode_mode: str="mag_phase") -> None:
         super().__init__()
         self.encode_mode = encode_mode
 
+    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x):
 
         # Compute 2D FFT
@@ -35,7 +41,9 @@ class FFT_FeatureExtractor(nn.Module):
         else:
             raise ValueError(f"Unknown encode_mode: {self.encode_mode}")
 
+# [中文注释] 定义 Receiver1D 类，封装模型状态、参数和方法。
 class Receiver1D(nn.Module):
+    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(self, length: int, num_classes: int, apply_softmax: bool = False):
         """
         Partitions 'length' into 'num_classes' equal segments (or as equal as possible).
@@ -47,6 +55,7 @@ class Receiver1D(nn.Module):
         self.num_classes = num_classes
         self.apply_softmax = apply_softmax
 
+    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         x: [B, channels, L]  (channels could be 1 or outC)
@@ -100,7 +109,9 @@ class Receiver1D(nn.Module):
 
         return x_part
 
+# [中文注释] 定义 FullOptMetalens 类，封装模型状态、参数和方法。
 class FullOptMetalens(Meta_Base):
+    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(
         self,
         img_height: int,
@@ -137,6 +148,7 @@ class FullOptMetalens(Meta_Base):
         self.build_layers()
         self.reset_parameters()
 
+    # [中文注释] 实现 build_layers；结合调用处确认数据流和物理意义。
     def build_layers(self):
 
         print(self.conv_cfg['encode_mode'], flush=True)
@@ -170,12 +182,14 @@ class FullOptMetalens(Meta_Base):
             length=self.kernel_size_list[-1], num_classes=self.num_classes, apply_softmax=False
         )
 
+    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_test_mode(self, test_mode=True):
         for name, module in self.features.named_children():
             if hasattr(module, "set_test_mode"):
                 module.set_test_mode(test_mode)
 
 
+    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x: Tensor) -> Tensor:
         x = self.feature_extraction(x)
         x = x.flatten(-2)
