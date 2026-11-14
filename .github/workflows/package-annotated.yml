@@ -15,11 +15,11 @@ jobs:
           ref: chinese-annotated
       - name: Create source archive
         run: |
-          zip -r SP2RINT_Chinese_Annotated.zip . \
+          zip -r /tmp/SP2RINT_Chinese_Annotated.zip . \
             -x ".git/*" \
             -x ".github/*"
       - uses: actions/upload-artifact@v4
         with:
           name: SP2RINT_Chinese_Annotated
-          path: SP2RINT_Chinese_Annotated.zip
+          path: /tmp/SP2RINT_Chinese_Annotated.zip
           if-no-files-found: error
