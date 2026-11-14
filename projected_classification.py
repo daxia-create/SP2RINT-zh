@@ -132,11 +132,10 @@ def transfer_weights(src_model, tgt_model):
     - tgt_model (torch.nn.Module): The target model receiving the weights.
 
     Returns:
-    - loaded_keys (list): Successfully loaded keys.
-    - skipped_keys (list): Keys skipped due to shape mismatch.
+        当前实现返回 None。loaded_keys 和 skipped_keys 仅在函数内部统计，未向调用者返回。
     """
 
-# state_dict 同时包含 nn.Parameter 和注册的 buffer（例如光学层的 W_buffer）。
+    # state_dict 同时包含 nn.Parameter 和注册的 buffer（例如光学层的 W_buffer）。
     # 源模型提供待迁移数据；目标模型提供允许接收的数据项及其目标 shape。
     src_state_dict = src_model.state_dict()
     tgt_state_dict = tgt_model.state_dict()
@@ -161,6 +160,8 @@ def transfer_weights(src_model, tgt_model):
     tgt_state_dict.update(filtered_state_dict)
     tgt_model.load_state_dict(tgt_state_dict)
 
+    # 注意：此处 load_state_dict 已完成迁移；当前函数最后显式 return None。
+    # 因此调用方不能通过返回值获得 loaded_keys/skipped_keys。
     # print(f"✅ Successfully loaded {len(loaded_keys)} layers.")
     # print(f"⚠️ Skipped {len(skipped_keys)} layers due to size mismatch:")
     # for key in skipped_keys:
