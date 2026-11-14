@@ -1,3 +1,7 @@
+# 中文学习注释：实验/单元测试辅助脚本；仅增加说明，不修改原始执行逻辑。
+# 脚本用途：unitest/test_diag_LPA.py。运行前核对数据路径、配置、设备及输出目录。
+# 重点检查：实验变量、扫描范围、评价指标、绘图坐标/单位和结果保存位置。
+
 #!/usr/bin/env python
 # coding=UTF-8
 import argparse
@@ -37,6 +41,7 @@ from pyutils.general import ensure_dir
 from matplotlib import pyplot as plt
 import h5py
 sys.path.pop(0)
+# [中文注释] 实现 project_to_implementable_subspace；结合脚本目的确认输入、输出和评价量。
 def project_to_implementable_subspace(model_trained, model_test, patched_metalens, out_epoch, device):
     '''
     there is not reparameterization of the transfer matrix of the metasurface during the DONN training,
@@ -167,6 +172,7 @@ def project_to_implementable_subspace(model_trained, model_test, patched_metalen
     return None
 
 
+# [中文注释] 实现 validate；结合脚本目的确认输入、输出和评价量。
 def validate(
     model: nn.Module,
     validation_loader: DataLoader,
@@ -223,6 +229,7 @@ def validate(
     mlflow.log_metrics({"val_loss": class_meter.avg, "val_acc": accuracy}, step=epoch)
 
 
+# [中文注释] 实现 test；结合脚本目的确认输入、输出和评价量。
 def test(
     model: nn.Module,
     test_loader: DataLoader,
@@ -267,6 +274,7 @@ def test(
     mlflow.log_metrics({"test_loss": class_meter.avg, "test_acc": accuracy}, step=epoch)
 
 
+# [中文注释] 脚本入口：组织测试、参数扫描或结果可视化。
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("config", metavar="FILE", help="config file")

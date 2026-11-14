@@ -1,3 +1,7 @@
+# 中文学习注释：实验/单元测试辅助脚本；仅增加说明，不修改原始执行逻辑。
+# 脚本用途：unitest/random_inference_field.py。运行前核对数据路径、配置、设备及输出目录。
+# 重点检查：实验变量、扫描范围、评价指标、绘图坐标/单位和结果保存位置。
+
 '''
 in this script, we will plot the inference field of a hybrid model and show that why phase mask does not work
 
@@ -56,6 +60,7 @@ from core.utils import (
 )
 sys.path.pop()
 
+# [中文注释] 实现 probe_full_tm；结合脚本目的确认输入、输出和评价量。
 def probe_full_tm(
     device,
     patched_metalens,
@@ -154,6 +159,7 @@ def probe_full_tm(
     return full_wave_response
 
 
+# [中文注释] 实现 print_unique_counts；结合脚本目的确认输入、输出和评价量。
 def print_unique_counts(tensor: torch.Tensor):
     """
     Given a 2D tensor of shape (batch_size, L), print the number of unique values
@@ -165,6 +171,7 @@ def print_unique_counts(tensor: torch.Tensor):
         unique_vals = torch.unique(row)
         print(f"Sample {i}: {len(unique_vals)} unique values")
 
+# [中文注释] 实现 calculate_diffraction；结合脚本目的确认输入、输出和评价量。
 def calculate_diffraction(near2far_matrices, source, device, mode = "near2far", diffract_opt=None, num_atom=32):
     if mode == "near2far":
         total_field = draw_diffraction_region(
@@ -213,6 +220,7 @@ def calculate_diffraction(near2far_matrices, source, device, mode = "near2far", 
         raise ValueError(f"Unknown mode: {mode}")
     return total_field, field
     
+# [中文注释] 实现 get_near2far_matrices；结合脚本目的确认输入、输出和评价量。
 def get_near2far_matrices(path, device, num_atom=32, distance=4):
     res = 50
     wl = 0.85
@@ -284,6 +292,7 @@ def get_near2far_matrices(path, device, num_atom=32, distance=4):
         print("near2far matrices saved to", path)
         return near2far_matrices
 
+# [中文注释] 实现 get_metasurface_tm；结合脚本目的确认输入、输出和评价量。
 def get_metasurface_tm(path, device, num_atom=32, LUT=None, num_surfaces=10, norm_tm=True, patch_size=17):
     res = 50
     wl = 0.85

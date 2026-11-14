@@ -1,3 +1,6 @@
+# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
+# 模块路径：core/models/layers/base_layer.py；请结合调用处核对输入/输出形状、设备、数据类型和梯度流。
+
 from typing import Any, Dict, Optional, Tuple
 
 import torch
@@ -10,12 +13,15 @@ from .utils import mzi_out_diff_to_phase, mzi_phase_to_out_diff, partition_chunk
 __all__ = ["ONNBaseLayer"]
 
 
+# [中文注释] 定义 ONNBaseLayer 类，封装模块状态、参数和计算方法。
 class ONNBaseLayer(nn.Module):
+    # [中文注释] 初始化模块参数和内部状态，检查默认值及张量维度。
     def __init__(self, *args, device: Device = torch.device("cpu"), **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # cuda or cpu, defaults to cpu
         self.device = device
 
+    # [中文注释] 实现 build_parameters；结合调用处确认功能、输入输出及状态变化。
     def build_parameters(self, mode: str = "weight") -> None:
         ## weight mode
         phase = torch.empty(
@@ -51,6 +57,7 @@ class ONNBaseLayer(nn.Module):
             if not hasattr(self, p_name):
                 self.register_buffer(p_name, p)
 
+    # [中文注释] 实现 reset_parameters；结合调用处确认功能、输入输出及状态变化。
     def reset_parameters(self, mode=None) -> None:
         mode = mode or self.mode
         if mode in {"weight"}:
@@ -101,45 +108,57 @@ class ONNBaseLayer(nn.Module):
             init.uniform_(self.bias, 0, 0)
 
     @classmethod
+    # [中文注释] 实现 from_layer；结合调用处确认功能、输入输出及状态变化。
     def from_layer(cls, layer: nn.Module, *args, **kwargs) -> nn.Module:
         raise NotImplementedError
 
+    # [中文注释] 实现 get_num_parameters；结合调用处确认功能、输入输出及状态变化。
     def get_num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
+    # [中文注释] 实现 enable_fast_forward；结合调用处确认功能、输入输出及状态变化。
     def enable_fast_forward(self) -> None:
         self.fast_forward_flag = True
 
+    # [中文注释] 实现 disable_fast_forward；结合调用处确认功能、输入输出及状态变化。
     def disable_fast_forward(self) -> None:
         self.fast_forward_flag = False
 
+    # [中文注释] 实现 set_phase_variation；结合调用处确认功能、输入输出及状态变化。
     def set_phase_variation(self, flag: bool = False) -> None:
         self._enable_phase_variation = flag
 
+    # [中文注释] 实现 set_weight_noise；结合调用处确认功能、输入输出及状态变化。
     def set_weight_noise(self, noise_std: float = 0.0) -> None:
         self.weight_noise_std = noise_std
 
+    # [中文注释] 实现 set_output_noise；结合调用处确认功能、输入输出及状态变化。
     def set_output_noise(self, noise_std: float = 0.0) -> None:
         self.output_noise_std = noise_std
 
+    # [中文注释] 实现 set_gamma_noise；结合调用处确认功能、输入输出及状态变化。
     def set_gamma_noise(
         self, noise_std: float, random_state: Optional[int] = None
     ) -> None:
         self.gamma_noise_std = noise_std
 
     # crosstalk changes
+    # [中文注释] 实现 set_crosstalk_noise；结合调用处确认功能、输入输出及状态变化。
     def set_crosstalk_noise(self, flag: bool = False) -> None:
         self._enable_crosstalk = flag
 
+    # [中文注释] 实现 set_weight_bitwidth；结合调用处确认功能、输入输出及状态变化。
     def set_weight_bitwidth(self, w_bit: int) -> None:
         self.w_bit = w_bit
         self.phase_quantizer.set_bit(w_bit)
         self.weight_quantizer.set_bit(w_bit)
 
+    # [中文注释] 实现 set_input_bitwidth；结合调用处确认功能、输入输出及状态变化。
     def set_input_bitwidth(self, in_bit: int) -> None:
         self.in_bit = in_bit
         self.input_quantizer.set_bit(in_bit)
 
+    # [中文注释] 实现 load_parameters；结合调用处确认功能、输入输出及状态变化。
     def load_parameters(self, param_dict: Dict[str, Any]) -> None:
         """
         description: update parameters based on this parameter dictionary\\
@@ -148,15 +167,19 @@ class ONNBaseLayer(nn.Module):
         if self.mode == "phase":
             self.build_weight(update_list=param_dict)
 
+    # [中文注释] 实现 switch_mode_to；结合调用处确认功能、输入输出及状态变化。
     def switch_mode_to(self, mode: str) -> None:
         self.mode = mode
 
+    # [中文注释] 实现 set_enable_ste；结合调用处确认功能、输入输出及状态变化。
     def set_enable_ste(self, enable_ste: bool) -> None:
         self._enable_ste = enable_ste
 
+    # [中文注释] 实现 set_noise_flag；结合调用处确认功能、输入输出及状态变化。
     def set_noise_flag(self, noise_flag: bool) -> None:
         self._noise_flag = noise_flag
 
+    # [中文注释] 实现 build_weight_from_phase；结合调用处确认功能、输入输出及状态变化。
     def build_weight_from_phase(self, phases: Tensor) -> Tensor:
         ## inplace operation: not differentiable operation using copy_
         self.weight.data.copy_(
@@ -164,6 +187,7 @@ class ONNBaseLayer(nn.Module):
         )
         return self.weight
 
+    # [中文注释] 实现 build_phase_from_weight_；结合调用处确认功能、输入输出及状态变化。
     def build_phase_from_weight_(self, weight: Tensor) -> Tuple[Tensor, Tensor]:
         ## inplace operation: not differentiable operation using copy_
         phase, S_scale = self.build_phase_from_weight(weight)
@@ -171,6 +195,7 @@ class ONNBaseLayer(nn.Module):
         self.S_scale.data.copy_(S_scale)
         return self.phase, self.S_scale
 
+    # [中文注释] 实现 build_phase_from_weight；结合调用处确认功能、输入输出及状态变化。
     def build_phase_from_weight(self, weight: Tensor) -> Tuple[Tensor, Tensor]:
         ## inplace operation: not differentiable operation using copy_
         S_scale = (
@@ -185,6 +210,7 @@ class ONNBaseLayer(nn.Module):
         phase = mzi_out_diff_to_phase(weight)
         return phase, S_scale
 
+    # [中文注释] 实现 sync_parameters；结合调用处确认功能、输入输出及状态变化。
     def sync_parameters(self, src: str = "weight") -> None:
         """
         description: synchronize all parameters from the source parameters
@@ -196,9 +222,11 @@ class ONNBaseLayer(nn.Module):
         else:
             raise NotImplementedError
 
+    # [中文注释] 实现 print_parameters；结合调用处确认功能、输入输出及状态变化。
     def print_parameters(self):
         print(self.phase) if self.mode == "phase" else print(self.weight)
 
+    # [中文注释] 实现 build_weight；结合调用处确认功能、输入输出及状态变化。
     def build_weight(
         self,
         weight=None,
@@ -215,8 +243,10 @@ class ONNBaseLayer(nn.Module):
             weight = weight * (1 + torch.randn_like(weight) * self.weight_noise_std)
         return weight
 
+    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(self, x):
         raise NotImplementedError
 
+    # [中文注释] 实现 extra_repr；结合调用处确认功能、输入输出及状态变化。
     def extra_repr(self) -> str:
         return ""

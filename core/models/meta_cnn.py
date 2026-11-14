@@ -1,3 +1,6 @@
+# 中文学习注释：本文件保持上游实现不变；以下说明用于帮助追踪模型职责、张量流和物理含义。
+# 模块定位：core/models/meta_cnn.py。请结合调用处核对输入/输出维度、复数类型、归一化约定及梯度是否保留。
+
 from collections import OrderedDict
 from typing import List
 
@@ -12,7 +15,9 @@ from .meta_base import ConvBlock, LinearBlock, Meta_Base
 __all__ = ["Meta_CNN", "CNN"]
 
 
+# [中文注释] 定义 Meta_CNN 类，封装模型状态、参数和方法。
 class Meta_CNN(Meta_Base):
+    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(
         self,
         img_height: int,
@@ -59,6 +64,7 @@ class Meta_CNN(Meta_Base):
         self.build_layers()
         self.reset_parameters()
 
+    # [中文注释] 实现 build_layers；结合调用处确认数据流和物理意义。
     def build_layers(self):
         self.features = OrderedDict()
         for idx, (mid_channels, out_channels) in enumerate(
@@ -122,6 +128,7 @@ class Meta_CNN(Meta_Base):
         )
         self.classifier = nn.Sequential(self.classifier)
 
+    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x: Tensor) -> Tensor:
         x = self.features(x)
         if self.pool2d is not None:
@@ -132,6 +139,7 @@ class Meta_CNN(Meta_Base):
         return x
 
 
+# [中文注释] 实现 CNN；结合调用处确认数据流和物理意义。
 def CNN(*args, **kwargs):
     kwargs.pop("conv_cfg")
     kwargs.pop("linear_cfg")

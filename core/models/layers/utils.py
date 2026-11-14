@@ -1,3 +1,6 @@
+# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
+# 模块路径：core/models/layers/utils.py；请结合调用处核对输入/输出形状、设备、数据类型和梯度流。
+
 import os
 import random
 import sys
@@ -31,18 +34,22 @@ __all__ = [
 ]
 
 
+# [中文注释] 定义 STE 类，封装模块状态、参数和计算方法。
 class STE(torch.autograd.Function):
     @staticmethod
+    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(ctx, x, x_noisy):
         ## use x_noisy as forward
         return x_noisy
 
     @staticmethod
+    # [中文注释] 实现 backward；结合调用处确认功能、输入输出及状态变化。
     def backward(ctx, grad_output):
         ## gradient flow back to x, not x_noisy
         return grad_output.clone(), None
 
 
+# [中文注释] 实现 mzi_out_diff_to_phase；结合调用处确认功能、输入输出及状态变化。
 def mzi_out_diff_to_phase(x: Tensor) -> Tensor:
     """Y-branch-based 1x2 MZI.
     The power difference on two output ports, i.e., out_diff = out1 - out2, converted to the internal arm phase difference (delta_phi)
@@ -64,6 +71,7 @@ def mzi_out_diff_to_phase(x: Tensor) -> Tensor:
     )  # this clamp is for safety, as the input x may not be exactly in [-1, 1]
 
 
+# [中文注释] 实现 mzi_phase_to_out_diff；结合调用处确认功能、输入输出及状态变化。
 def mzi_phase_to_out_diff(x: Tensor) -> Tensor:
     """Y-branch-based 1x2 MZI.
     The internal arm phase difference (delta_phi) converted to the power difference on two output ports, i.e., out_diff = out1 - out2
@@ -82,10 +90,13 @@ def mzi_phase_to_out_diff(x: Tensor) -> Tensor:
     return torch.sin(x)
 
 
+# [中文注释] 定义 DeterministicCtx 类，封装模块状态、参数和计算方法。
 class DeterministicCtx:
+    # [中文注释] 初始化模块参数和内部状态，检查默认值及张量维度。
     def __init__(self, random_state: Optional[int] = None) -> None:
         self.random_state = random_state
 
+    # [中文注释] 实现 __enter__；结合调用处确认功能、输入输出及状态变化。
     def __enter__(self):
         self.random_state = random.getstate()
         self.numpy_random_state = np.random.get_state()
@@ -94,6 +105,7 @@ class DeterministicCtx:
         set_torch_deterministic(self.random_state)
         return self
 
+    # [中文注释] 实现 __exit__；结合调用处确认功能、输入输出及状态变化。
     def __exit__(self, *args):
         random.setstate(self.random_state)
         np.random.seed(self.numpy_random_state)
@@ -102,6 +114,7 @@ class DeterministicCtx:
         torch.cuda.set_rng_state(self.torch_cuda_random_state)
 
 
+# [中文注释] 实现 calculate_grad_hessian；结合调用处确认功能、输入输出及状态变化。
 def calculate_grad_hessian(
     model, train_loader, criterion, num_samples=10, device="cuda:0"
 ):
@@ -166,9 +179,12 @@ def calculate_grad_hessian(
     model.train(is_train)
 
 
+# [中文注释] 实现 uniform_quantize；结合调用处确认功能、输入输出及状态变化。
 def uniform_quantize(num_levels, gradient_clip=False):
+    # [中文注释] 定义 qfn 类，封装模块状态、参数和计算方法。
     class qfn(torch.autograd.Function):
         @staticmethod
+        # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
         def forward(ctx, input):
             # n = float(2 ** k - 1)
             n = (
@@ -178,6 +194,7 @@ def uniform_quantize(num_levels, gradient_clip=False):
             return out
 
         @staticmethod
+        # [中文注释] 实现 backward；结合调用处确认功能、输入输出及状态变化。
         def backward(ctx, grad_output):
             grad_input = grad_output.clone()
             if gradient_clip:
@@ -187,7 +204,9 @@ def uniform_quantize(num_levels, gradient_clip=False):
     return qfn().apply
 
 
+# [中文注释] 定义 pad_quantize_fn 类，封装模块状态、参数和计算方法。
 class pad_quantize_fn(torch.nn.Module):
+    # [中文注释] 初始化模块参数和内部状态，检查默认值及张量维度。
     def __init__(self, w_bit, quant_ratio: float = 1.0, v_max: float = 2.0):
         """Differentiable weight quantizer. Support different algorithms. Support Quant-Noise with partial quantization.
 
@@ -207,6 +226,7 @@ class pad_quantize_fn(torch.nn.Module):
         self.uniform_q = uniform_quantize(num_levels=w_bit, gradient_clip=True)
         self.v_max = v_max
 
+    # [中文注释] 实现 set_quant_ratio；结合调用处确认功能、输入输出及状态变化。
     def set_quant_ratio(self, quant_ratio=None):
         if quant_ratio is None:
             ### get recommended value
@@ -234,6 +254,7 @@ class pad_quantize_fn(torch.nn.Module):
         )
         self.quant_ratio = quant_ratio
 
+    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(self, x):
         if self.quant_ratio < 1 and self.training:
             ### implementation from fairseq
@@ -254,8 +275,10 @@ class pad_quantize_fn(torch.nn.Module):
         return weight_q
 
 
+# [中文注释] 定义 HardRoundFunction 类，封装模块状态、参数和计算方法。
 class HardRoundFunction(torch.autograd.Function):
     @staticmethod
+    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(ctx, x: Tensor) -> Tensor:
         # x_max, indices = x.max(dim=1, keepdim=True)
         # illegal_indices = [k for k, v in Counter(indices.view(-1).cpu().numpy().tolist()).items() if v > 1]
@@ -268,10 +291,12 @@ class HardRoundFunction(torch.autograd.Function):
         ctx.mask = mask
         return torch.where(mask, x.round(), x)
 
+    # [中文注释] 实现 backward；结合调用处确认功能、输入输出及状态变化。
     def backward(ctx, grad_output: Tensor) -> Tensor:
         return grad_output.clone().masked_fill_(ctx.mask, 0)
 
 
+# [中文注释] 实现 hard_diff_round；结合调用处确认功能、输入输出及状态变化。
 def hard_diff_round(x: Tensor) -> Tensor:
     """Project to the closest permutation matrix"""
     assert x.size(-1) == x.size(
@@ -280,7 +305,9 @@ def hard_diff_round(x: Tensor) -> Tensor:
     return HardRoundFunction.apply(x)
 
 
+# [中文注释] 定义 WeightQuantizer_LSQ 类，封装模块状态、参数和计算方法。
 class WeightQuantizer_LSQ(nn.Module):
+    # [中文注释] 初始化模块参数和内部状态，检查默认值及张量维度。
     def __init__(self, out_features: int, device="cuda:0", **kwargs_q):
         super().__init__()
         self.kwargs_q = get_default_kwargs_q(kwargs_q)
@@ -305,13 +332,16 @@ class WeightQuantizer_LSQ(nn.Module):
         self.register_buffer("init_state", torch.zeros(1))
         self.register_buffer("signed", torch.tensor([kwargs_q["signed"]]))
 
+    # [中文注释] 实现 update_param；结合调用处确认功能、输入输出及状态变化。
     def update_param(self, param_k, param_v):
         self.kwargs_q[param_k] = param_v
 
+    # [中文注释] 实现 set_bit；结合调用处确认功能、输入输出及状态变化。
     def set_bit(self, nbits):
         self.kwargs_q["nbits"] = nbits
         self._compute_quant_range()
 
+    # [中文注释] 实现 _compute_quant_range；结合调用处确认功能、输入输出及状态变化。
     def _compute_quant_range(self):
         if self.signed == 1:
             self.Qn = -(2 ** (self.nbits - 1))
@@ -320,11 +350,13 @@ class WeightQuantizer_LSQ(nn.Module):
             self.Qn = 0
             self.Qp = 2**self.nbits - 1
 
+    # [中文注释] 实现 extra_repr；结合调用处确认功能、输入输出及状态变化。
     def extra_repr(self):
         if self.alpha is None:
             return "fake"
         return "{}".format(self.kwargs_q)
 
+    # [中文注释] 实现 _initialize_state；结合调用处确认功能、输入输出及状态变化。
     def _initialize_state(self, x):
         logger.info(
             f"LSQ Weight quantizer: (mode: {self.q_mode}): initialize weight scale for int{self.nbits} quantization with offset: {self.offset}"
@@ -341,6 +373,7 @@ class WeightQuantizer_LSQ(nn.Module):
             )
         self.init_state.fill_(1)
 
+    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(self, x):
         if self.alpha is None:
             return x
@@ -391,7 +424,9 @@ class WeightQuantizer_LSQ(nn.Module):
         return x
 
 
+# [中文注释] 定义 ActQuantizer_LSQ 类，封装模块状态、参数和计算方法。
 class ActQuantizer_LSQ(nn.Module):
+    # [中文注释] 初始化模块参数和内部状态，检查默认值及张量维度。
     def __init__(self, in_features: int, device="cuda:0", **kwargs_q):
         super().__init__()
         self.kwargs_q = get_default_kwargs_q(kwargs_q)
@@ -416,13 +451,16 @@ class ActQuantizer_LSQ(nn.Module):
         self.register_buffer("init_state", torch.zeros(1))
         self.register_buffer("signed", torch.zeros(1))
 
+    # [中文注释] 实现 update_param；结合调用处确认功能、输入输出及状态变化。
     def update_param(self, param_k, param_v):
         self.kwargs_q[param_k] = param_v
 
+    # [中文注释] 实现 set_bit；结合调用处确认功能、输入输出及状态变化。
     def set_bit(self, nbits):
         self.kwargs_q["nbits"] = self.nbits = nbits
         self._compute_quant_range()
 
+    # [中文注释] 实现 _compute_quant_range；结合调用处确认功能、输入输出及状态变化。
     def _compute_quant_range(self):
         if self.signed == 1:
             self.Qn = -(2 ** (self.nbits - 1))
@@ -431,11 +469,13 @@ class ActQuantizer_LSQ(nn.Module):
             self.Qn = 0
             self.Qp = 2**self.nbits - 1
 
+    # [中文注释] 实现 extra_repr；结合调用处确认功能、输入输出及状态变化。
     def extra_repr(self):
         if self.alpha is None:
             return "fake"
         return "{}".format(self.kwargs_q)
 
+    # [中文注释] 实现 _initialize_state；结合调用处确认功能、输入输出及状态变化。
     def _initialize_state(self, x):
         logger.info(
             f"LSQ Act quantizer: (mode: {self.q_mode}): initialize weight scale for int{self.nbits} quantization with offset: {self.offset}"
@@ -456,6 +496,7 @@ class ActQuantizer_LSQ(nn.Module):
             )
         self.init_state.fill_(1)
 
+    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(self, x):
         if self.alpha is None:
             return x
@@ -507,7 +548,9 @@ class ActQuantizer_LSQ(nn.Module):
         return x
 
 
+# [中文注释] 定义 PixelLambdaConstraint 类，封装模块状态、参数和计算方法。
 class PixelLambdaConstraint(nn.Module):
+    # [中文注释] 初始化模块参数和内部状态，检查默认值及张量维度。
     def __init__(
         self,
         ref_lambda_: float,
@@ -530,6 +573,7 @@ class PixelLambdaConstraint(nn.Module):
         self.device = device
         self.register_buffer("init_state", torch.zeros(1))
 
+    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(self, pixel_size: Tensor, lambda_: Tensor):
         if self.training and self.init_state == 0:
             self._initialize_state(pixel_size)
@@ -547,12 +591,15 @@ class PixelLambdaConstraint(nn.Module):
         pixel_size = pixel_size.clamp(min=pixel_size_min)
         return pixel_size, lambda_
 
+    # [中文注释] 实现 _initialize_state；结合调用处确认功能、输入输出及状态变化。
     def _initialize_state(self, x):
         logger.info("Initializing pixel-size and lambda constraint")
         self.init_state.fill_(1)
 
 
+# [中文注释] 定义 DeviceQuantizer 类，封装模块状态、参数和计算方法。
 class DeviceQuantizer(nn.Module):
+    # [中文注释] 初始化模块参数和内部状态，检查默认值及张量维度。
     def __init__(self, resolution: int = 1, mode: str = "nm", device="cuda:0"):
         super().__init__()
         self.device = device
@@ -562,6 +609,7 @@ class DeviceQuantizer(nn.Module):
         self.set_resolution(self.resolution)
         self.register_buffer("init_state", torch.zeros(1))
 
+    # [中文注释] 实现 set_resolution；结合调用处确认功能、输入输出及状态变化。
     def set_resolution(self, resolution):
         self.resolution = resolution
         if self.mode == "nm":
@@ -576,6 +624,7 @@ class DeviceQuantizer(nn.Module):
         else:
             raise NotImplementedError
 
+    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(self, x):
         if self.training and self.init_state == 0:
             self._initialize_state(x)
@@ -595,6 +644,7 @@ class DeviceQuantizer(nn.Module):
 
         return quantized_x
 
+    # [中文注释] 实现 extra_repr；结合调用处确认功能、输入输出及状态变化。
     def extra_repr(self):
         if self.resolution is not None:
             s = "resolution={resolution}"
@@ -607,6 +657,7 @@ class DeviceQuantizer(nn.Module):
             s += ", scale_factor={scale_factor}"
         return s.format(**self.__dict__)
 
+    # [中文注释] 实现 _initialize_state；结合调用处确认功能、输入输出及状态变化。
     def _initialize_state(self, x):
         logger.info(
             f"Initializing device quantization with resolution: {self.resolution} under {self.mode} mode"
@@ -614,13 +665,16 @@ class DeviceQuantizer(nn.Module):
         self.init_state.fill_(1)
 
 
+# [中文注释] 定义 GradientMask 类，封装模块状态、参数和计算方法。
 class GradientMask(torch.autograd.Function):
     @staticmethod
+    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(ctx, x, mask):
         ctx.save_for_backward(mask)
         return x
 
     @staticmethod
+    # [中文注释] 实现 backward；结合调用处确认功能、输入输出及状态变化。
     def backward(ctx, grad_outputs):
         (mask,) = ctx.saved_tensors
         grad_inputs = grad_outputs * mask
@@ -631,6 +685,7 @@ class GradientMask(torch.autograd.Function):
 gradientmask = GradientMask.apply
 
 
+# [中文注释] 实现 merge_chunks；结合调用处确认功能、输入输出及状态变化。
 def merge_chunks(x: Tensor) -> Tensor:
     # x = [h1, w1, h2, w2, ...., hk, wk]
     # out: [h1*h2*...*hk, w1*w2*...*wk]
@@ -644,6 +699,7 @@ def merge_chunks(x: Tensor) -> Tensor:
     return x
 
 
+# [中文注释] 实现 partition_chunks；结合调用处确认功能、输入输出及状态变化。
 def partition_chunks(x: Tensor, out_shape: int | Tuple[int, ...]) -> Tensor:
     ### x: [h1*h2*...*hk, w1*w2*...*wk]
     ### out_shape: (h1, w1, ...)
@@ -656,6 +712,7 @@ def partition_chunks(x: Tensor, out_shape: int | Tuple[int, ...]) -> Tensor:
     return x
 
 
+# [中文注释] 实现 polynomial；结合调用处确认功能、输入输出及状态变化。
 def polynomial(x: Tensor, coeff: Tensor) -> Tensor:
     ## coeff: from high to low order coefficient, last one is constant
     ## e.g., [p5, p4, p3, p2, p1, p0] -> p5*x^5 + p4*x^4 + p3*x^3 + p2*x^2 + p1*x + p0
@@ -667,6 +724,7 @@ def polynomial(x: Tensor, coeff: Tensor) -> Tensor:
     return out
 
 
+# [中文注释] 实现 polynomial2；结合调用处确认功能、输入输出及状态变化。
 def polynomial2(
     x: Tensor | float, y: Tensor | float, coeff: Tensor | List[float]
 ) -> Tensor | float:

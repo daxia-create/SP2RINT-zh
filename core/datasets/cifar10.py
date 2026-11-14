@@ -1,3 +1,6 @@
+# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
+# 模块路径：core/datasets/cifar10.py；关注数据来源、预处理、样本/标签格式、张量形状和数据划分。
+
 from typing import List
 
 import torch
@@ -14,7 +17,9 @@ resize_modes = {
 __all__ = ["CIFAR10Dataset"]
 
 
+# [中文注释] 定义 CIFAR10Dataset 数据类/对象，封装数据集状态和读取接口。
 class CIFAR10Dataset(torch.utils.data.Dataset):
+    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         root: str,
@@ -51,6 +56,7 @@ class CIFAR10Dataset(torch.utils.data.Dataset):
         self.load()
         self.n_instance = len(self.data)
 
+    # [中文注释] 读取数据并转换为训练所需格式；核对样本和标签形状。
     def load(self):
         if self.augment:
             transform_train = [
@@ -179,6 +185,7 @@ class CIFAR10Dataset(torch.utils.data.Dataset):
                     f"Only use the front {self.n_test_samples} " f"images as TEST set."
                 )
 
+    # [中文注释] 返回单个样本及标签；确认数据类型、维度和变换顺序。
     def __getitem__(self, index: int):
         img = self.data[index][0]
         if self.binarize:
@@ -191,10 +198,12 @@ class CIFAR10Dataset(torch.utils.data.Dataset):
         # instance = {'image': img, 'digit': digit}
         # return instance
 
+    # [中文注释] 返回数据集样本数量。
     def __len__(self) -> int:
         return self.n_instance
 
 
+# [中文注释] 实现 test；结合调用处确认数据流及预处理含义。
 def test():
     cifar10 = CIFAR10Dataset(
         root="/home/dataset/cifar10",

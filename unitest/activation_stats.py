@@ -1,3 +1,7 @@
+# 中文学习注释：实验/单元测试辅助脚本；仅增加说明，不修改原始执行逻辑。
+# 脚本用途：unitest/activation_stats.py。运行前核对数据路径、配置、设备及输出目录。
+# 重点检查：实验变量、扫描范围、评价指标、绘图坐标/单位和结果保存位置。
+
 #!/usr/bin/env python
 # coding=UTF-8
 import argparse
@@ -51,6 +55,7 @@ import random
 import wandb
 
 
+# [中文注释] 实现 test；结合脚本目的确认输入、输出和评价量。
 def test(
     model: nn.Module,
     test_loader: DataLoader,
@@ -143,6 +148,7 @@ def test(
 
 
 
+# [中文注释] 脚本入口：组织测试、参数扫描或结果可视化。
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("config", metavar="FILE", help="config file")

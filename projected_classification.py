@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 # coding=UTF-8
+# -----------------------------------------------------------------------------
+# 中文学习注释：仅增加说明，不修改原始算法、变量、默认参数或执行流程。
+# 文件职责：SP²RINT 分类任务主程序：组织 DONN 训练、物理投影、Patch 逆向设计、系统校准与结果评估。
+# 阅读建议：结合调用处检查输入/输出形状、复数数据类型、单位、边界条件及梯度流。
+# -----------------------------------------------------------------------------
+
 import argparse
 import os
 import sys
@@ -46,6 +52,7 @@ import datetime
 import psutil
 import torch
 
+# [中文注释] 实现 overfit_single_batch 功能；请结合调用处确认输入、输出和状态变化。
 def overfit_single_batch(
     model: nn.Module,
     train_loader: DataLoader,
@@ -92,6 +99,7 @@ def overfit_single_batch(
             print(f"✅ Model successfully overfit the batch at iteration {i}!")
             break
 
+# [中文注释] 实现 update_admm_dual_variable 功能；请结合调用处确认输入、输出和状态变化。
 def update_admm_dual_variable(
     model: torch.nn.Module,
     stitched_response: List[torch.Tensor],
@@ -112,6 +120,7 @@ def update_admm_dual_variable(
         admm_vars['z_admm'][i] = stitched_response[i].detach()
         admm_vars['u_admm'][i] = admm_vars['u_admm'][i] + x - admm_vars['z_admm'][i]
 
+# [中文注释] 实现 transfer_weights 功能；请结合调用处确认输入、输出和状态变化。
 def transfer_weights(src_model, tgt_model):
     """
     Transfers weights from src_model to tgt_model, skipping layers with mismatched sizes.
@@ -152,6 +161,7 @@ def transfer_weights(src_model, tgt_model):
     return None
     # return loaded_keys, skipped_keys
 
+# [中文注释] 执行电磁响应探测；重点检查激励、监测位置、采样和复场归一化。
 def probe_full_tm(
     device,
     patched_metalens,
@@ -269,6 +279,7 @@ def probe_full_tm(
     # print(f"this is the time for probing the full wave response: {time_end - time_start}", flush=True)
     return full_wave_response
 
+# [中文注释] 设置或更新 test_model_transfer_matrix 相关状态；注意是否影响缓存、优化变量或响应矩阵。
 def set_test_model_transfer_matrix(
     model, 
     model_test,
@@ -293,6 +304,7 @@ def set_test_model_transfer_matrix(
         )
         model_test.features.conv1.conv._conv_pos.metalens[f"{i}_17"].set_param_from_target_matrix(hr_tm)
 
+# [中文注释] 实现 design_using_LPA 功能；请结合调用处确认输入、输出和状态变化。
 def design_using_LPA(
     model, 
     model_test,
@@ -313,6 +325,7 @@ def design_using_LPA(
         )
         model_test.features.conv1.conv._conv_pos.metalens[f"{i}_1"].set_param_from_target_matrix(hr_tm)
     
+# [中文注释] 执行物理投影/逆向设计；区分目标响应、实际响应与结构设计变量。
 def project_to_implementable_subspace(
         model, 
         model_test,
@@ -871,6 +884,7 @@ def project_to_implementable_subspace(
         return stitched_response.detach(), current_pillar_width
 
 
+# [中文注释] 执行训练或训练步骤；关注前向传播、损失、反向传播和优化器更新。
 def train(
     model: nn.Module,
     train_loader: DataLoader,
@@ -1167,6 +1181,7 @@ def train(
         raise NotImplementedError(f"Unknown reset_frequency: {configs.invdes.reset_frequency}")
 
 
+# [中文注释] 实现 validate 功能；请结合调用处确认输入、输出和状态变化。
 def validate(
     model: nn.Module,
     validation_loader: DataLoader,
@@ -1283,6 +1298,7 @@ def validate(
         #         plt.close()
 
 
+# [中文注释] 实现 test 功能；请结合调用处确认输入、输出和状态变化。
 def test(
     model: nn.Module,
     test_loader: DataLoader,
@@ -1413,6 +1429,7 @@ def test(
         return class_meter.avg, accuracy
 
 
+# [中文注释] 程序入口：读取配置、构建对象并启动训练/仿真流程。
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("config", metavar="FILE", help="config file")
