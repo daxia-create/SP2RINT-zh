@@ -120,7 +120,9 @@ def update_admm_dual_variable(
         admm_vars['z_admm'][i] = stitched_response[i].detach()
         admm_vars['u_admm'][i] = admm_vars['u_admm'][i] + x - admm_vars['z_admm'][i]
 
-# [中文注释] 实现 transfer_weights 功能；请结合调用处确认输入、输出和状态变化。
+# [权重迁移] 将源模型中“参数名相同且张量形状相同”的权重/缓冲区复制到目标模型。
+# 常见用途：训练模型与测试模型的分辨率或部分层结构不同，只迁移两者兼容的状态项。
+# 注意：这里只按 state_dict 的键名和 shape 匹配，不做插值、重采样或物理响应重新计算。
 def transfer_weights(src_model, tgt_model):
     """
     Transfers weights from src_model to tgt_model, skipping layers with mismatched sizes.
@@ -134,23 +136,28 @@ def transfer_weights(src_model, tgt_model):
     - skipped_keys (list): Keys skipped due to shape mismatch.
     """
 
+# state_dict 同时包含 nn.Parameter 和注册的 buffer（例如光学层的 W_buffer）。
+    # 源模型提供待迁移数据；目标模型提供允许接收的数据项及其目标 shape。
     src_state_dict = src_model.state_dict()
     tgt_state_dict = tgt_model.state_dict()
 
+    # 下面两个列表只用于记录迁移情况；当前函数末尾并没有把它们返回。
     loaded_keys = []
     skipped_keys = []
 
-    # Create a new state_dict with only matching keys
+    # 先建立一个“可安全迁移项”的字典，避免把形状不兼容的张量交给 load_state_dict。
     filtered_state_dict = {}
 
     for key, param in src_state_dict.items():
+        # 必须同时满足：目标模型存在同名键，并且源/目标张量维度完全一致。
         if key in tgt_state_dict and param.shape == tgt_state_dict[key].shape:
             filtered_state_dict[key] = param  # Only load matching keys
             loaded_keys.append(key)
         else:
             skipped_keys.append(key)
 
-    # Update target model's state_dict
+    # 目标 state_dict 原本包含目标模型的全部键；update 只覆盖匹配成功的项。
+    # 未匹配项保留目标模型原值，再整体载入目标模型。
     tgt_state_dict.update(filtered_state_dict)
     tgt_model.load_state_dict(tgt_state_dict)
 
@@ -159,16 +166,22 @@ def transfer_weights(src_model, tgt_model):
     # for key in skipped_keys:
     #     print(f"   - {key}: Expected {tgt_state_dict[key].shape}, but found {src_state_dict[key].shape}")
     return None
+    # 当前版本返回 None；若后续需要统计迁移率，可将上一行取消注释并同步修改调用方。
     # return loaded_keys, skipped_keys
 
-# [中文注释] 执行电磁响应探测；重点检查激励、监测位置、采样和复场归一化。
+# [全波传输矩阵探测] 对每个离散输入采样点依次施加单位激励，读取输出复场并组装 W。
+# 该函数不是训练神经网络，而是调用电磁求解器测量当前几何结构的实际复传输响应。
 def probe_full_tm(
     device,
     patched_metalens,
     full_wave_down_sample_rate = 1,
 ):
     # time_start = time.time()
+    # number_atoms 是器件包含的 meta-atom 数；每个 atom 对应 15 个输入采样位置，
+    # full_wave_down_sample_rate 决定实际保留多少采样点。
     number_atoms = configs.invdes.num_atom
+    # 单位矩阵的每一行是一个独立输入基矢：每次仿真只点亮一个输入采样位置。
+    # 逐个计算这些基矢的输出，就能恢复线性系统的完整传输矩阵。
     sources = torch.eye(number_atoms * round(15 // full_wave_down_sample_rate), device=device)
 
     sim_key = list(patched_metalens.total_opt.objective.sims.keys())
@@ -176,10 +189,12 @@ def probe_full_tm(
     if hasattr(patched_metalens.total_opt.objective.sims[sim_key[0]].solver, "clear_solver_cache"):
         patched_metalens.total_opt.objective.sims[sim_key[0]].solver.clear_solver_cache()
         patched_metalens.total_opt.objective.sims[sim_key[0]].solver.set_cache_mode(True)
-    # we first need to run the normalizer
+    # 第一步先求归一化参考场：用参考 level-set 状态运行同一组输入激励，
+    # 记录输入监测面上被激励采样点的平均场幅度，避免不同输入通道的源幅度差异混入 W。
     if patched_metalens.total_normalizer_list is None or len(patched_metalens.total_normalizer_list) < number_atoms * round(15 // full_wave_down_sample_rate):
         total_normalizer_list = []
         for idx in range(number_atoms * round(15 // full_wave_down_sample_rate)):
+            # 第 idx 次仿真只激励第 idx 个输入基矢；将离散激励扩展到全波求解网格。
             source_i = sources[idx].repeat_interleave(full_wave_down_sample_rate)
             source_zero_padding = torch.zeros(int(0.5 * 50), device=device)
             source_i = torch.cat([source_zero_padding, source_i, source_zero_padding])
@@ -193,6 +208,8 @@ def probe_full_tm(
                 direction="x+",
             )
             if configs.invdes.param_method == "level_set":
+                # 以全 -0.05 的 level-set 变量构造参考状态；这里提取的是归一化所需源场，
+                # 不是最终待测结构的输出响应。
                 weight = patched_metalens.get_design_variables(
                     -0.05 * torch.ones_like(patched_metalens.get_pillar_width()),
                 )
@@ -215,7 +232,8 @@ def probe_full_tm(
             total_normalizer_list.append(source_field[boolean_source_mask].mean())
             if idx == number_atoms * round(15 // full_wave_down_sample_rate) - 1:
                 patched_metalens.set_total_normalizer_list(total_normalizer_list)
-    # now we already have the normalizer, we can run the full wave response
+    # 第二步使用当前实际柱宽进行全波计算。每个输入基矢单独求解一次，
+    # 将输出监测线上的复数 fz 场采样为响应数据。
     if hasattr(patched_metalens.total_opt.objective.sims[sim_key[0]].solver, "clear_solver_cache"):
         patched_metalens.total_opt.objective.sims[sim_key[0]].solver.clear_solver_cache()
         
@@ -229,6 +247,7 @@ def probe_full_tm(
             dtype=torch.complex128
         )
         for idx in range(number_atoms * round(15 // full_wave_down_sample_rate)):
+            # 第 idx 次仿真只激励第 idx 个输入基矢；将离散激励扩展到全波求解网格。
             source_i = sources[idx].repeat_interleave(full_wave_down_sample_rate)
             source_zero_padding = torch.zeros(int(0.5 * 50), device=device)
             source_i = torch.cat([source_zero_padding, source_i, source_zero_padding])
@@ -259,11 +278,15 @@ def probe_full_tm(
             else:
                 raise NotImplementedError(f"Unknown param_method: {configs.invdes.param_method}")
 
+            # 从输入切片到近场监测切片读取复数 z 分量；这里保留复场，不是强度 |E|^2。
             response = patched_metalens.total_opt.objective.response[('in_slice_1', 'nearfield_1', 0.85, "Hz1", 300)]["fz"].squeeze()
+            # 按设定采样率抽取输出位置，保证最终矩阵尺寸与输入基矢数一致。
             response = response[full_wave_down_sample_rate // 2 :: full_wave_down_sample_rate]
             assert len(response) == number_atoms * round(15 // full_wave_down_sample_rate), f"{len(response)}!= {number_atoms * round(15 // full_wave_down_sample_rate)}"
+            # 暂存时每一行对应一次输入激励；转置后采用 W[out, in] 约定：行是输出采样，列是输入采样。
             full_wave_response[idx] = response
         full_wave_response = full_wave_response.transpose(0, 1)
+        # 两种归一化策略二选一：全矩阵最大模归一化，或按每个输入通道的参考源场归一化。
         if configs.model.conv_cfg.max_tm_norm:
             full_wave_response = full_wave_response / torch.max(full_wave_response.abs())
         else:
@@ -279,7 +302,8 @@ def probe_full_tm(
     # print(f"this is the time for probing the full wave response: {time_end - time_start}", flush=True)
     return full_wave_response
 
-# [中文注释] 设置或更新 test_model_transfer_matrix 相关状态；注意是否影响缓存、优化变量或响应矩阵。
+# [测试模型物理响应校准] 把训练模型当前的几何宽度送入 PatchMetalens 做全波探测，
+# 再用测得的实际 W 替换测试模型中对应光学层的理想/代理传输矩阵。
 def set_test_model_transfer_matrix(
     model, 
     model_test,
@@ -304,7 +328,8 @@ def set_test_model_transfer_matrix(
         )
         model_test.features.conv1.conv._conv_pos.metalens[f"{i}_17"].set_param_from_target_matrix(hr_tm)
 
-# [中文注释] 实现 design_using_LPA 功能；请结合调用处确认输入、输出和状态变化。
+# [LPA 查找表初始化] 将 DONN 目标传输矩阵的相位送入局域周期近似（LPA）查找表，
+# 由目标相位反查初始柱宽，再做全波探测并把实际响应写回测试模型。
 def design_using_LPA(
     model, 
     model_test,
@@ -315,6 +340,7 @@ def design_using_LPA(
         transfer_weights(model, model_test)
 
     for i in range(configs.model.conv_cfg.path_depth):
+        # 读取第 i 层训练得到的低分辨率复传输矩阵；LPA 初始化阶段使用其相位响应。
         current_lr_tm = model.state_dict()[f"features.conv1.conv._conv_pos.metalens.{i}_1.W_buffer"]
         patched_metalens.set_target_phase_response(current_lr_tm)
         patched_metalens.rebuild_param()
@@ -325,7 +351,9 @@ def design_using_LPA(
         )
         model_test.features.conv1.conv._conv_pos.metalens[f"{i}_1"].set_param_from_target_matrix(hr_tm)
     
-# [中文注释] 执行物理投影/逆向设计；区分目标响应、实际响应与结构设计变量。
+# [核心物理投影] DONN 训练阶段得到的理想复矩阵未必能由真实介质柱阵列实现。
+# 本函数以该矩阵为目标，调用 Patch 局部全波仿真和逆向设计寻找可加工柱宽，
+# 并将拼接得到的实际复响应 stitched_response 反馈给模型。
 def project_to_implementable_subspace(
         model, 
         model_test,
@@ -361,10 +389,12 @@ def project_to_implementable_subspace(
     # lr = configs.invdes.lr
     print(f"learning rate to be used: {invdes_lr}", flush=True)
     print(f"this is the sharpness to be used: {invdes_sharp}", flush=True)
+    # 记录每一层投影后的实际传输矩阵；最终按网络光学层顺序堆叠。
     stitched_response_list = []
     if model_test is not None:
         transfer_weights(model, model_test)
     current_pillar_width = []
+    # 输入/输出采样率可独立调度：它们决定 Patch 仿真中输入激励和输出场的离散采样密度。
     in_downsample_rate = in_downsample_rate_scheduler.step()
     out_downsample_rate = out_downsample_rate_scheduler.step()
     if finetune_entire:
@@ -388,10 +418,12 @@ def project_to_implementable_subspace(
             target_entire_transfer_matrix_phase - 2 * torch.pi,
         ], dim=0)
 
+    # 从 DONN 每个光学层的 W_buffer 取出当前“理想目标矩阵”；后续逐层或整网匹配。
     target_transfer_matrix = []
     for i in range(configs.model.conv_cfg.path_depth):
         target_transfer_matrix.append(model.state_dict()[f"features.conv1.conv._conv_pos.metalens.{i}_17.W_buffer"])
 
+    # layer_wise_matching=True：逐层求解每片超表面；否则进入整网响应匹配分支。
     if layer_wise_matching:
         for i in range(configs.model.conv_cfg.path_depth):
             # first, we need to read the transfer matrix of the metasurface trained in DONN
