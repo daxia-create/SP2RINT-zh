@@ -1,6 +1,3 @@
-# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
-# 模块路径：core/datasets/navierstokes.py；关注数据来源、预处理、样本/标签格式、张量形状和数据划分。
-
 import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -25,9 +22,7 @@ resize_modes = {
 __all__ = ["NavierStokes", "NavierStokesDataset"]
 
 
-# [中文注释] 定义 InputGaussianError 数据类/对象，封装数据集状态和读取接口。
 class InputGaussianError(object):
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self, mean: float = 0.0, std: float = 0.0, random_state: int = 0
     ) -> None:
@@ -35,7 +30,6 @@ class InputGaussianError(object):
         self.std = std
         self.random_state = random_state
 
-    # [中文注释] 实现 __call__；结合调用处确认数据流及预处理含义。
     def __call__(self, data, target):
         # random_state make sures we can reproduce the noises
         # we only added to the source field (channel 1 in the 3rd dim), not the permittivity
@@ -55,9 +49,7 @@ class InputGaussianError(object):
         return data, target
 
 
-# [中文注释] 定义 TargetGaussianError 数据类/对象，封装数据集状态和读取接口。
 class TargetGaussianError(object):
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self, mean: float = 0.0, std: float = 0.0, random_state: int = 0
     ) -> None:
@@ -65,7 +57,6 @@ class TargetGaussianError(object):
         self.std = std
         self.random_state = random_state
 
-    # [中文注释] 实现 __call__；结合调用处确认数据流及预处理含义。
     def __call__(self, data, target):
         # random_state make sures we can reproduce the noises
         if self.mean < 1e-6 and self.std < 1e-6:
@@ -83,9 +74,7 @@ class TargetGaussianError(object):
         return data, target
 
 
-# [中文注释] 定义 InputDownSampleError 数据类/对象，封装数据集状态和读取接口。
 class InputDownSampleError(object):
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         size: None | Tuple[int, int] = None,
@@ -102,7 +91,6 @@ class InputDownSampleError(object):
         self.antialias = antialias
         self.align_corners = align_corners
 
-    # [中文注释] 实现 __call__；结合调用处确认数据流及预处理含义。
     def __call__(self, data, target):
         # epsilon source will all have downsampling error
         # data: [bs, #data, 2, h, w]
@@ -163,9 +151,7 @@ class InputDownSampleError(object):
         return data, target
 
 
-# [中文注释] 定义 TargetDownSampleError 数据类/对象，封装数据集状态和读取接口。
 class TargetDownSampleError(object):
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         size: None | Tuple[int, int] = None,
@@ -182,7 +168,6 @@ class TargetDownSampleError(object):
         self.antialias = antialias
         self.align_corners = align_corners
 
-    # [中文注释] 实现 __call__；结合调用处确认数据流及预处理含义。
     def __call__(self, data, target):
         # epsilon source will all have downsampling error
         # target: [bs, #data, 2, h, w]
@@ -243,9 +228,7 @@ class TargetDownSampleError(object):
         return data, target
 
 
-# [中文注释] 定义 InputQuantizationError 数据类/对象，封装数据集状态和读取接口。
 class InputQuantizationError(object):
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(self, prec: str = "fp32", mode="per_channel") -> None:
         # emulate the quantization error
         # the target precision is for real or imag part
@@ -259,7 +242,6 @@ class InputQuantizationError(object):
             + [f"int{i}" for i in range(1, 16)]
         )
 
-    # [中文注释] 实现 _quantize_int；结合调用处确认数据流及预处理含义。
     def _quantize_int(self, data, k: int = 32):
         # per field scaling
         if self.prec in {"int1", "int2", "int3", "int4", "int5", "int6"}:
@@ -286,7 +268,6 @@ class InputQuantizationError(object):
         # out = (out - 0.5) * (2 * scale + 1e-10)  # [-scale, scale] the original range
         return out
 
-    # [中文注释] 实现 __call__；结合调用处确认数据流及预处理含义。
     def __call__(self, data: Tensor, target: Tensor):
         # assume input is complex64 or complex128
         is_complex = False
@@ -311,9 +292,7 @@ class InputQuantizationError(object):
         return data, target
 
 
-# [中文注释] 定义 TargetQuantizationError 数据类/对象，封装数据集状态和读取接口。
 class TargetQuantizationError(object):
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(self, prec: str = "fp32", mode="per_channel") -> None:
         # emulate the quantization error
         # the target precision is for real or imag part
@@ -326,7 +305,6 @@ class TargetQuantizationError(object):
             + [f"int{i}" for i in range(1, 16)]
         )
 
-    # [中文注释] 实现 _quantize_int；结合调用处确认数据流及预处理含义。
     def _quantize_int(self, data, k: int = 32):
         # per field scaling
         if self.prec in {"int1", "int2", "int3", "int4", "int5", "int6"}:
@@ -352,7 +330,6 @@ class TargetQuantizationError(object):
         # out = (out - 0.5) * (2 * scale + 1e-10)  # [-scale, scale] the original range
         return out
 
-    # [中文注释] 实现 __call__；结合调用处确认数据流及预处理含义。
     def __call__(self, data: Tensor, target: Tensor):
         # assume input is complex64 or complex128
         is_complex = False
@@ -377,7 +354,6 @@ class TargetQuantizationError(object):
         return data, target
 
 
-# [中文注释] 定义 NavierStokes 数据类/对象，封装数据集状态和读取接口。
 class NavierStokes(VisionDataset):
     url = None
     train_filename = "training"
@@ -393,7 +369,6 @@ class NavierStokes(VisionDataset):
         "target_quant": TargetQuantizationError,
     }
 
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         root: str,
@@ -479,7 +454,6 @@ class NavierStokes(VisionDataset):
         self.data = self.data
         self.targets = self.targets
 
-    # [中文注释] 实现 add_noise；结合调用处确认数据流及预处理含义。
     def add_noise(self, data, target, noise_cfg):
         print(f"Adding noise: {noise_cfg}")
         for noise_type, noise_arg in noise_cfg.items():
@@ -487,7 +461,6 @@ class NavierStokes(VisionDataset):
             data, target = noise_fn(data, target)
         return data, target
 
-    # [中文注释] 实现 process_raw_data；结合调用处确认数据流及预处理含义。
     def process_raw_data(self) -> None:
         processed_dir = os.path.join(self.root, self.processed_dir)
         processed_training_file = os.path.join(
@@ -521,7 +494,6 @@ class NavierStokes(VisionDataset):
             processed_dir=processed_dir,
         )
 
-    # [中文注释] 实现 _load_dataset；结合调用处确认数据流及预处理含义。
     def _load_dataset(self) -> Tuple[torch.Tensor, torch.Tensor]:
         file = f"raw/{self.filename}"
         filepath = Path(self.root).joinpath(file).as_posix()
@@ -538,7 +510,6 @@ class NavierStokes(VisionDataset):
 
         return data, targets
 
-    # [中文注释] 实现 _split_dataset；结合调用处确认数据流及预处理含义。
     def _split_dataset(self, data: Tensor, targets: Tensor) -> Tuple[Tensor, ...]:
         from sklearn.model_selection import train_test_split
 
@@ -564,7 +535,6 @@ class NavierStokes(VisionDataset):
             targets_test,
         )
 
-    # [中文注释] 实现 _preprocess_dataset；结合调用处确认数据流及预处理含义。
     def _preprocess_dataset(
         self, train_data, train_targets, test_data, test_targets
     ) -> Tuple[Tensor, Tensor]:
@@ -591,7 +561,6 @@ class NavierStokes(VisionDataset):
         return train_data, train_targets, test_data, test_targets
 
     @staticmethod
-    # [中文注释] 实现 _save_dataset；结合调用处确认数据流及预处理含义。
     def _save_dataset(
         data_train: Tensor,
         targets_train: Tensor,
@@ -623,7 +592,6 @@ class NavierStokes(VisionDataset):
             )
         print("Processed dataset saved")
 
-    # [中文注释] 读取数据并转换为训练所需格式；核对样本和标签形状。
     def load(self, train: bool = True):
         filename = f"{self.train_filename}.pt" if train else f"{self.test_filename}.pt"
         with open(os.path.join(self.root, self.processed_dir, filename), "rb") as f:
@@ -638,22 +606,18 @@ class NavierStokes(VisionDataset):
 
         return data, targets
 
-    # [中文注释] 实现 download；结合调用处确认数据流及预处理含义。
     def download(self) -> None:
         if self._check_integrity():
             print("Files already downloaded and verified")
             return
 
-    # [中文注释] 实现 _check_integrity；结合调用处确认数据流及预处理含义。
     def _check_integrity(self) -> bool:
         # print(os.path.join(self.root, "raw", self.filename))
         return all([os.path.exists(os.path.join(self.root, "raw", self.filename))])
 
-    # [中文注释] 返回数据集样本数量。
     def __len__(self):
         return self.targets.size(0)
 
-    # [中文注释] 返回单个样本及标签；确认数据类型、维度和变换顺序。
     def __getitem__(self, item):
         if self.grid_x is not None:
             data = torch.cat([self.data[item], self.grid_x, self.grid_y], dim=0)
@@ -661,14 +625,11 @@ class NavierStokes(VisionDataset):
             data = self.data[item]
         return (data, self.targets[item])
 
-    # [中文注释] 实现 extra_repr；结合调用处确认数据流及预处理含义。
     def extra_repr(self) -> str:
         return "Split: {}".format("Train" if self.train is True else "Test")
 
 
-# [中文注释] 定义 NavierStokesDataset 数据类/对象，封装数据集状态和读取接口。
 class NavierStokesDataset:
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         root: str,
@@ -706,7 +667,6 @@ class NavierStokesDataset:
         self.load()
         self.n_instance = len(self.data)
 
-    # [中文注释] 读取数据并转换为训练所需格式；核对样本和标签形状。
     def load(self):
         tran = [
             transforms.ToTensor(),
@@ -770,20 +730,16 @@ class NavierStokesDataset:
 
             self.data = test
 
-    # [中文注释] 返回单个样本及标签；确认数据类型、维度和变换顺序。
     def __getitem__(self, index: int) -> Dict[str, Tensor]:
         return self.data[index]
 
-    # [中文注释] 返回数据集样本数量。
     def __len__(self) -> int:
         return len(self.data)
 
-    # [中文注释] 实现 __call__；结合调用处确认数据流及预处理含义。
     def __call__(self, index: int) -> Dict[str, Tensor]:
         return self.__getitem__(index)
 
 
-# [中文注释] 实现 test_ns；结合调用处确认数据流及预处理含义。
 def test_ns():
     mmi = NavierStokesDataset(
         root="./data/",

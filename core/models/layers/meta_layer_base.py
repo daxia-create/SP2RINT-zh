@@ -1,6 +1,3 @@
-# 中文学习注释：本文件保持上游实现不变；以下说明用于帮助追踪模型职责、张量流和物理含义。
-# 模块定位：core/models/layers/meta_layer_base.py。请结合调用处核对输入/输出维度、复数类型、归一化约定及梯度是否保留。
-
 from typing import Optional
 
 import torch
@@ -14,9 +11,7 @@ from pyutils.general import print_stat
 __all__ = ["Meta_Layer_BASE"]
 
 
-# [中文注释] 定义 Meta_Layer_BASE 类，封装模型状态、参数和方法。
 class Meta_Layer_BASE(nn.Module):
-    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(
         self,
         in_channels: int,
@@ -146,11 +141,9 @@ class Meta_Layer_BASE(nn.Module):
         self.detection_snr = 0
         self.pad_noise_std = 0
 
-    # [中文注释] 实现 build_parameters；结合调用处确认数据流和物理意义。
     def build_parameters(self, bias: bool):
         raise NotImplementedError
 
-    # [中文注释] 实现 reset_parameters；结合调用处确认数据流和物理意义。
     def reset_parameters(self, fan_in=None):
         # the fourier-domain convolution is equivalent to h x w kernel-size convolution
         if self.weight is not None:
@@ -179,35 +172,28 @@ class Meta_Layer_BASE(nn.Module):
         if self.bias is not None:
             nn.init.uniform_(self.bias, 0, 0)
 
-    # [中文注释] 实现 requires_grad_Meta；结合调用处确认数据流和物理意义。
     def requires_grad_Meta(self, mode: bool = True):
         self._requires_grad_Meta = mode
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_input_er(self, er: float = 0, x_max: float = 6.0) -> None:
         # extinction ratio of input modulator
         self.input_er = er
         self.input_max = x_max
 
-    # [中文注释] 实现 requires_grad_beta；结合调用处确认数据流和物理意义。
     def requires_grad_beta(self, mode: bool = True):
         self.beta.requires_grad = mode
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_meta_params(self, meta_params: nn.Module) -> None:
         self._conv_pos.meta_params = meta_params
         if self._conv_neg is not None:
             self._conv_neg.meta_params = meta_params
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_input_snr(self, snr: float = 0) -> None:
         self.input_snr = snr
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_detection_snr(self, snr: float = 0) -> None:
         self.detection_snr = snr
 
-    # [中文注释] 实现 add_input_noise；结合调用处确认数据流和物理意义。
     def add_input_noise(self, x: Tensor) -> Tensor:
         if 1e-5 < self.input_er < 80:
             x_max = self.input_max
@@ -219,7 +205,6 @@ class Meta_Layer_BASE(nn.Module):
             return x.mul(noise)
         return x
 
-    # [中文注释] 实现 add_detection_noise；结合调用处确认数据流和物理意义。
     def add_detection_noise(self, x: Tensor) -> Tensor:
         if 1e-5 < self.detection_snr < 80:
             avg_noise_power = 0.5 / 10 ** (self.detection_snr / 10)
@@ -227,22 +212,18 @@ class Meta_Layer_BASE(nn.Module):
             return x.add(noise)
         return x
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_gumbel_temperature(self, T: float = 5.0):
         self.gumbel_temperature = T
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_input_bitwidth(self, in_bit: int) -> None:
         self.in_bit = in_bit
         self.input_quantizer.set_bit(in_bit)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_phase_res(self, res: int) -> None:
         self.phase_res = res
         self.phase_quantizer.set_resolution(res)
 
     @property
-    # [中文注释] 实现 _weight；结合调用处确认数据流和物理意义。
     def _weight(self):
         # mask: quantize the metasurface mask, if one channel used, it means phase, otherwise is complex value for
         # by default, the weight is complex number
@@ -261,10 +242,8 @@ class Meta_Layer_BASE(nn.Module):
 
         return phase, mag
 
-    # [中文注释] 实现 _forward_impl；结合调用处确认数据流和物理意义。
     def _forward_impl(self, x):
         raise NotImplementedError
 
-    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x):
         return self._forward_impl(x)

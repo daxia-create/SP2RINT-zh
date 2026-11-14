@@ -1,3 +1,7 @@
+# 中文学习注释：MAPS/Ceviche 第三方核心依赖阅读辅助。未改变上游算法、参数或执行逻辑。
+# 模块定位：thirdparty/MAPS_old/core/invdes/models/layers/objective.py。重点追踪 Maxwell 离散、线性系统、边界/源项、伴随导数及结构参数化。
+# 注意：这里的注释是学习说明，不代表上游项目作者原始注释。
+
 import copy
 from copy import deepcopy
 from typing import Tuple
@@ -19,7 +23,9 @@ from .....thirdparty.ceviche import jacobian
 from .....thirdparty.ceviche.constants import MU_0
 from .....core.utils import print_stat
 import math
+# [中文注释] 定义 EigenmodeObjective 类，封装电磁求解/优化相关状态。
 class EigenmodeObjective(object):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         sims: dict,  # {wl: Simulation}
@@ -54,6 +60,7 @@ class EigenmodeObjective(object):
         self.energy = energy
         self.obj_type = obj_type
 
+    # [中文注释] 实现 __call__；结合调用处核对物理量、网格维度、边界条件和单位。
     def __call__(self, fields):
         s_list = []
         (
@@ -159,7 +166,9 @@ class EigenmodeObjective(object):
             return npa.mean(npa.array(s_list))
 
 
+# [中文注释] 定义 FluxNear2FarObjective 类，封装电磁求解/优化相关状态。
 class FluxNear2FarObjective(object):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         sims: dict,  # {wl: Simulation}
@@ -194,6 +203,7 @@ class FluxNear2FarObjective(object):
         self.obj_type = obj_type
         self.total_farfield_region_solutions = total_farfield_region_solutions
 
+    # [中文注释] 实现 __call__；结合调用处核对物理量、网格维度、边界条件和单位。
     def __call__(self, fields):
         s_list = []
         (
@@ -406,7 +416,9 @@ class FluxNear2FarObjective(object):
             return npa.mean(npa.array(s_list))  # we only need absolute flux
 
 
+# [中文注释] 定义 FluxObjective 类，封装电磁求解/优化相关状态。
 class FluxObjective(object):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         sims: dict,  # {wl: Simulation}
@@ -437,6 +449,7 @@ class FluxObjective(object):
         self.minus_src = minus_src
         self.obj_type = obj_type
 
+    # [中文注释] 实现 __call__；结合调用处核对物理量、网格维度、边界条件和单位。
     def __call__(self, fields):
         s_list = []
         (
@@ -531,7 +544,9 @@ class FluxObjective(object):
             return npa.mean(npa.array(s_list))  # we only need absolute flux
 
 
+# [中文注释] 定义 ResponseRecorderObjective 类，封装电磁求解/优化相关状态。
 class ResponseRecorderObjective(object):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         sims: dict,  # {wl: Simulation}
@@ -554,6 +569,7 @@ class ResponseRecorderObjective(object):
         self.target_temps = target_temps
         self.obj_type = obj_type
 
+    # [中文注释] 实现 __call__；结合调用处核对物理量、网格维度、边界条件和单位。
     def __call__(self, fields):
         (
             target_wls,
@@ -604,7 +620,9 @@ class ResponseRecorderObjective(object):
             return npa.mean(npa.array(mean_phase_list))
 
 
+# [中文注释] 定义 ShapeSimilarityObjective 类，封装电磁求解/优化相关状态。
 class ShapeSimilarityObjective(object):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         sims: dict,  # {wl: Simulation}
@@ -641,6 +659,7 @@ class ShapeSimilarityObjective(object):
         self.similarity = similarity
         self.obj_type = obj_type
 
+    # [中文注释] 实现 __call__；结合调用处核对物理量、网格维度、边界条件和单位。
     def __call__(self, fields):
         (
             target_wls,
@@ -701,7 +720,9 @@ class ShapeSimilarityObjective(object):
             return npa.mean(npa.array(similarity_list))
 
 
+# [中文注释] 定义 ShapeSimilarityNear2FarObjective 类，封装电磁求解/优化相关状态。
 class ShapeSimilarityNear2FarObjective(object):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         sims: dict,  # {wl: Simulation}
@@ -742,6 +763,7 @@ class ShapeSimilarityNear2FarObjective(object):
         self.obj_type = obj_type
         self.total_farfield_region_solutions = total_farfield_region_solutions
 
+    # [中文注释] 实现 __call__；结合调用处核对物理量、网格维度、边界条件和单位。
     def __call__(self, fields):
         (
             target_wls,
@@ -842,7 +864,9 @@ class ShapeSimilarityNear2FarObjective(object):
             return npa.mean(npa.array(similarity_list))
 
 
+# [中文注释] 定义 ObjectiveFunc 类，封装电磁求解/优化相关状态。
 class ObjectiveFunc(object):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         simulations: dict,
@@ -881,10 +905,12 @@ class ObjectiveFunc(object):
         self.verbose = verbose
         self.obj_cfgs = dict()
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def switch_solver(self, neural_solver, numerical_solver, use_autodiff=False):
         for simulation in self.sims.values():
             simulation.switch_solver(neural_solver, numerical_solver, use_autodiff)
 
+    # [中文注释] 实现 add_objective；结合调用处核对物理量、网格维度、边界条件和单位。
     def add_objective(
         self,
         cfgs: dict = dict(
@@ -1054,11 +1080,13 @@ class ObjectiveFunc(object):
             ### complete autograd graph is from permittivity (np.ndarray) to fields and to fom
             self.Js[name] = {"weight": cfg["weight"], "fn": objfn}
 
+    # [中文注释] 构造离散导数/Jacobian 算子，为场求解或伴随梯度提供数值基础。
     def build_jacobian(self):
         # deprecated
         ## obtain_objective is the complete forward function starts from permittivity to solved fields, then to fom
         self.dJ = jacobian(self.obtain_objective, mode="reverse")
 
+    # [中文注释] 构造离散导数/Jacobian 算子，为场求解或伴随梯度提供数值基础。
     def build_adj_jacobian(self):
         # deprecated
         self.dJ_dE = {}
@@ -1069,6 +1097,7 @@ class ObjectiveFunc(object):
                 dJ_dE_fn[(wl, out_mode)] = dJ_dE
             self.dJ_dE[name] = {"weight": obj["weight"], "fn": dJ_dE_fn}
 
+    # [中文注释] 实现 obtain_adj_srcs；结合调用处核对物理量、网格维度、边界条件和单位。
     def obtain_adj_srcs(self):
         # this should be called after obtain_objective, other wise self.solutions is empty
         adj_sources = {}
@@ -1101,12 +1130,14 @@ class ObjectiveFunc(object):
             field_adj_normalizer[key] = flux
         return adj_sources, field_adj, field_adj_normalizer
 
+    # [中文注释] 实现 read_gradient；结合调用处核对物理量、网格维度、边界条件和单位。
     def read_gradient(self):
         gradients = {}
         for wl, sim in self.sims.items():
             gradients[wl] = sim.read_gradients()
         return gradients
 
+    # [中文注释] 实现 obtain_objective；结合调用处核对物理量、网格维度、边界条件和单位。
     def obtain_objective(
         self, permittivity: np.ndarray | Tensor, custom_source: dict = None, simulation_id: int = 0
     ) -> Tuple[dict, Tensor]:
@@ -1254,6 +1285,7 @@ class ObjectiveFunc(object):
             print(f"Total loss: {total_loss}, Breakdown: {self.breakdown}")
         return total_loss
 
+    # [中文注释] 实现 obtain_gradient；结合调用处核对物理量、网格维度、边界条件和单位。
     def obtain_gradient(
         self, permittivity: np.ndarray, eps_shape: Tuple[int] = None
     ) -> np.ndarray:
@@ -1263,6 +1295,7 @@ class ObjectiveFunc(object):
         grad = grad.reshape(eps_shape)
         return grad
 
+    # [中文注释] 实现 __call__；结合调用处核对物理量、网格维度、边界条件和单位。
     def __call__(
         self,
         permittivity: np.ndarray | Tensor,

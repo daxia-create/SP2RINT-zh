@@ -1,3 +1,7 @@
+# 中文学习注释：MAPS/Ceviche 第三方核心依赖阅读辅助。未改变上游算法、参数或执行逻辑。
+# 模块定位：thirdparty/MAPS_old/thirdparty/ceviche/jacobians.py。重点追踪 Maxwell 离散、线性系统、边界/源项、伴随导数及结构参数化。
+# 注意：这里的注释是学习说明，不代表上游项目作者原始注释。
+
 import autograd.numpy as npa
 
 from autograd.core import make_vjp, make_jvp
@@ -13,6 +17,7 @@ The only function you'll want to use in your code is `jacobian`,
 where you can specify the mode of differentiation (reverse, forward, or numerical)
 """
 
+# [中文注释] 构造离散导数/Jacobian 算子，为场求解或伴随梯度提供数值基础。
 def jacobian(fun, argnum=0, mode='reverse', step_size=1e-6):
     """ Computes jacobian of `fun` with respect to argument number `argnum` using automatic differentiation """
 
@@ -27,6 +32,7 @@ def jacobian(fun, argnum=0, mode='reverse', step_size=1e-6):
 
 
 @unary_to_nary
+# [中文注释] 构造离散导数/Jacobian 算子，为场求解或伴随梯度提供数值基础。
 def jacobian_reverse(fun, x):
     """ Compute jacobian of fun with respect to x using reverse mode differentiation"""
     vjp, ans = make_vjp(fun, x)
@@ -36,6 +42,7 @@ def jacobian_reverse(fun, x):
 
 
 @unary_to_nary
+# [中文注释] 构造离散导数/Jacobian 算子，为场求解或伴随梯度提供数值基础。
 def jacobian_forward(fun, x):
     """ Compute jacobian of fun with respect to x using forward mode differentiation"""
     jvp = make_jvp(fun, x)
@@ -52,6 +59,7 @@ def jacobian_forward(fun, x):
 
 
 @unary_to_nary
+# [中文注释] 构造离散导数/Jacobian 算子，为场求解或伴随梯度提供数值基础。
 def jacobian_numerical(fn, x, step_size=1e-7):
     """ numerically differentiate `fn` w.r.t. its argument `x` """
     in_array = float_2_array(x).flatten()
@@ -73,6 +81,7 @@ def jacobian_numerical(fn, x, step_size=1e-7):
     return jacobian
 
 
+# [中文注释] 实现 _jac_shape；结合调用处核对物理量、网格维度、边界条件和单位。
 def _jac_shape(x, ans):
     """ computes the shape of the jacobian where function has input x and output ans """
     m = float_2_array(x).size
@@ -80,6 +89,7 @@ def _jac_shape(x, ans):
     return (m, n)
 
 
+# [中文注释] 实现 _iscomplex；结合调用处核对物理量、网格维度、边界条件和单位。
 def _iscomplex(x):
     """ Checks if x is complex-valued or not """
     if isinstance(x, npa.ndarray):
@@ -100,6 +110,7 @@ if __name__ == '__main__':
     B = npa.random.random((N,M))
     print('A = \n', A)
 
+    # [中文注释] 实现 fn；结合调用处核对物理量、网格维度、边界条件和单位。
     def fn(x, b):
         return A @ x + B @ b
 

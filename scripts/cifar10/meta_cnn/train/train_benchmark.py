@@ -1,7 +1,3 @@
-# 中文学习注释：仅添加说明，不改变上游代码逻辑。
-# 模块职责：实验启动脚本：设置数据集、模型、训练配置并调用训练/评估入口。
-# 阅读时优先追踪配置文件、模型构建、数据加载、训练循环和结果保存。
-
 import os
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -20,7 +16,6 @@ config_file = f"configs/{dataset}/{model}/train/train.yml"
 configs.load(config_file, recursive=True)
 
 
-# [中文注释] 实现 task_launcher；结合调用处确认参数和执行流程。
 def task_launcher(args):
     (
         lr,

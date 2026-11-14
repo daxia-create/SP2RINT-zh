@@ -1,3 +1,7 @@
+# 中文学习注释：MAPS/Ceviche 第三方核心依赖阅读辅助。未改变上游算法、参数或执行逻辑。
+# 模块定位：thirdparty/MAPS_old/core/fdfd/derivatives.py。重点追踪 Maxwell 离散、线性系统、边界/源项、伴随导数及结构参数化。
+# 注意：这里的注释是学习说明，不代表上游项目作者原始注释。
+
 import numpy as np
 import torch
 
@@ -30,6 +34,7 @@ __all__ = [
 ]
 
 
+# [中文注释] 实现 sparse_eye；结合调用处核对物理量、网格维度、边界条件和单位。
 def sparse_eye(n, device="cuda:0"):
     diags = torch.ones(n, dtype=torch.float64)
     return torch.sparse.spdiags(
@@ -37,6 +42,7 @@ def sparse_eye(n, device="cuda:0"):
     ).to(device)
 
 
+# [中文注释] 实现 sparse_kron；结合调用处核对物理量、网格维度、边界条件和单位。
 def sparse_kron(input: torch.Tensor, other: torch.Tensor):
     assert input.ndim == other.ndim
     input = input.coalesce()
@@ -69,6 +75,7 @@ def sparse_kron(input: torch.Tensor, other: torch.Tensor):
     )
 
 
+# [中文注释] 实现 curl_E；结合调用处核对物理量、网格维度、边界条件和单位。
 def curl_E(axis, Ex, Ey, Ez, dL):
     if axis == 0:
         return (
@@ -90,6 +97,7 @@ def curl_E(axis, Ex, Ey, Ez, dL):
         ) / dL
 
 
+# [中文注释] 实现 curl_H；结合调用处核对物理量、网格维度、边界条件和单位。
 def curl_H(axis, Hx, Hy, Hz, dL):
     if axis == 0:
         return (
@@ -114,6 +122,7 @@ def curl_H(axis, Hx, Hy, Hz, dL):
 """======================= STUFF THAT CONSTRUCTS THE DERIVATIVE MATRIX ==========================="""
 
 
+# [中文注释] 构造离散导数/Jacobian 算子，为场求解或伴随梯度提供数值基础。
 def compute_derivative_matrices(
     omega, shape, npml, dL, bloch_x=0.0, bloch_y=0.0, device="cuda:0"
 ):
@@ -165,6 +174,7 @@ def compute_derivative_matrices(
 """ Derivative Matrices (no PML) """
 
 
+# [中文注释] 实现 createDws；结合调用处核对物理量、网格维度、边界条件和单位。
 def createDws(component, dir, shape, dL, bloch_x=0.0, bloch_y=0.0, device="cuda:0"):
     """creates the derivative matrices
     component: one of 'x' or 'y' for derivative in x or y direction
@@ -201,6 +211,7 @@ def createDws(component, dir, shape, dL, bloch_x=0.0, bloch_y=0.0, device="cuda:
         )
 
 
+# [中文注释] 实现 make_Dxf；结合调用处核对物理量、网格维度、边界条件和单位。
 def make_Dxf(dL, shape, bloch_x=0.0, device="cuda:0"):
     """Forward derivative in x"""
     Nx, Ny = shape
@@ -225,6 +236,7 @@ def make_Dxf(dL, shape, bloch_x=0.0, device="cuda:0"):
     return Dxf
 
 
+# [中文注释] 实现 make_Dxb；结合调用处核对物理量、网格维度、边界条件和单位。
 def make_Dxb(dL, shape, bloch_x=0.0, device="cuda:0"):
     """Backward derivative in x"""
     Nx, Ny = shape
@@ -253,6 +265,7 @@ def make_Dxb(dL, shape, bloch_x=0.0, device="cuda:0"):
     return Dxb
 
 
+# [中文注释] 实现 make_Dyf；结合调用处核对物理量、网格维度、边界条件和单位。
 def make_Dyf(dL, shape, bloch_y=0.0, device="cuda:0"):
     """Forward derivative in y"""
     Nx, Ny = shape
@@ -273,6 +286,7 @@ def make_Dyf(dL, shape, bloch_y=0.0, device="cuda:0"):
     return Dyf
 
 
+# [中文注释] 实现 make_Dyb；结合调用处核对物理量、网格维度、边界条件和单位。
 def make_Dyb(dL, shape, bloch_y=0.0, device="cuda:0"):
     """Backward derivative in y"""
     Nx, Ny = shape
@@ -298,6 +312,7 @@ def make_Dyb(dL, shape, bloch_y=0.0, device="cuda:0"):
 """ PML Functions """
 
 
+# [中文注释] 实现 create_S_matrices；结合调用处核对物理量、网格维度、边界条件和单位。
 def create_S_matrices(omega, shape, npml, dL, device="cuda:0"):
     """Makes the 'S-matrices'.  When dotted with derivative matrices, they add PML"""
 
@@ -354,6 +369,7 @@ def create_S_matrices(omega, shape, npml, dL, device="cuda:0"):
     # return Sx_f, Sx_b, Sy_f, Sy_b
 
 
+# [中文注释] 实现 create_sfactor；结合调用处核对物理量、网格维度、边界条件和单位。
 def create_sfactor(dir, omega, dL, N, N_pml, device="cuda:0"):
     """creates the S-factor cross section needed in the S-matrices"""
 
@@ -371,6 +387,7 @@ def create_sfactor(dir, omega, dL, N, N_pml, device="cuda:0"):
         raise ValueError("Dir value {} not recognized".format(dir))
 
 
+# [中文注释] 实现 create_sfactor_f；结合调用处核对物理量、网格维度、边界条件和单位。
 def create_sfactor_f(omega, dL, N, N_pml, dw, device="cuda:0"):
     """S-factor profile for forward derivative matrix"""
     sfactor_array = torch.ones(N, dtype=torch.complex128, device=device)
@@ -392,6 +409,7 @@ def create_sfactor_f(omega, dL, N, N_pml, dw, device="cuda:0"):
     return sfactor_array
 
 
+# [中文注释] 实现 create_sfactor_b；结合调用处核对物理量、网格维度、边界条件和单位。
 def create_sfactor_b(omega, dL, N, N_pml, dw, device="cuda:0"):
     """S-factor profile for backward derivative matrix"""
     # sfactor_array = np.ones(N, dtype=np.complex128)
@@ -413,12 +431,14 @@ def create_sfactor_b(omega, dL, N, N_pml, dw, device="cuda:0"):
     return sfactor_array
 
 
+# [中文注释] 实现 sig_w；结合调用处核对物理量、网格维度、边界条件和单位。
 def sig_w(l, dw, m=3, lnR=-30):
     """Fictional conductivity, note that these values might need tuning"""
     sig_max = -(m + 1) * lnR / (2 * ETA_0 * dw)
     return sig_max * (l / dw) ** m
 
 
+# [中文注释] 实现 s_value；结合调用处核对物理量、网格维度、边界条件和单位。
 def s_value(l, dw, omega):
     """S-value to use in the S-matrices"""
     return 1 - 1j * sig_w(l, dw) / (omega * EPSILON_0)

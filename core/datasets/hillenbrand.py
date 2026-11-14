@@ -1,6 +1,3 @@
-# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
-# 模块路径：core/datasets/hillenbrand.py；关注数据来源、预处理、样本/标签格式、张量形状和数据划分。
-
 import os
 import sys
 import torch
@@ -12,9 +9,7 @@ from scipy.fftpack import dct as scipy_dct
 
 __all__ = ["HillenbrandDataset"]
 
-# [中文注释] 定义 HillenbrandDataset 数据类/对象，封装数据集状态和读取接口。
 class HillenbrandDataset(Dataset):
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         root: str,
@@ -40,7 +35,6 @@ class HillenbrandDataset(Dataset):
         self.data = []
         self._prepare_dataset()
 
-    # [中文注释] 实现 _extract_features；结合调用处确认数据流及预处理含义。
     def _extract_features(self, filepath):
         sr, signal = wavfile.read(filepath)
         if signal.ndim > 1:
@@ -111,7 +105,6 @@ class HillenbrandDataset(Dataset):
 
         return torch.cat([mfcc_mean, mfcc_std])
 
-    # [中文注释] 实现 _prepare_dataset；结合调用处确认数据流及预处理含义。
     def _prepare_dataset(self):
         files = [f for f in os.listdir(self.root) if f.endswith(".wav")]
         speaker_dict = defaultdict(list)
@@ -135,7 +128,6 @@ class HillenbrandDataset(Dataset):
         male_speakers = sorted([k for k in speaker_dict if k.startswith("m")])
         female_speakers = sorted([k for k in speaker_dict if k.startswith("w")])
 
-        # [中文注释] 实现 split_speakers；结合调用处确认数据流及预处理含义。
         def split_speakers(speakers):
             np.random.seed(self.random_seed)
             np.random.shuffle(speakers)
@@ -162,16 +154,13 @@ class HillenbrandDataset(Dataset):
         self.label2idx = {label: idx for idx, label in enumerate(sorted(set(l for _, l in self.data)))}
         self.data = [(x, self.label2idx[y]) for x, y in self.data]
 
-    # [中文注释] 返回单个样本及标签；确认数据类型、维度和变换顺序。
     def __getitem__(self, index):
         return self.data[index]
 
-    # [中文注释] 返回数据集样本数量。
     def __len__(self):
         return len(self.data)
 
 
-# [中文注释] 实现 test；结合调用处确认数据流及预处理含义。
 def test():
     dataset = HillenbrandDataset(root="../../data/vowels", split="train", feature_type="padded_signal")
     x, y = dataset[0]

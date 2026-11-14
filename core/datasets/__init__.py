@@ -1,6 +1,3 @@
-# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
-# 模块路径：core/datasets/__init__.py；关注数据来源、预处理、样本/标签格式、张量形状和数据划分。
-
 import importlib
 import os
 

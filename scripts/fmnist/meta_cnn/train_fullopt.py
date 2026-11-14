@@ -1,7 +1,3 @@
-# 中文学习注释：仅添加阅读说明，不改变原始实验逻辑。
-# 实验职责：设置数据集、网络结构、训练参数，并调用统一的训练/评估流程。
-# 复现前核对配置文件、数据目录、随机种子、设备选择和结果输出路径。
-
 import os
 import subprocess
 from multiprocessing import Pool
@@ -19,7 +15,6 @@ config_file = f"configs/{dataset}/{model}/train/train_fullopt.yml"
 configs.load(config_file, recursive=True)
 
 
-# [中文注释] 实现 task_launcher；结合调用处确认输入输出和实验作用。
 def task_launcher(args):
     (
         lr,

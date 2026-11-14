@@ -1,6 +1,3 @@
-# 中文学习注释：本文件保持上游实现不变；以下说明用于帮助追踪模型职责、张量流和物理含义。
-# 模块定位：core/models/layers/meta_conv2d.py。请结合调用处核对输入/输出维度、复数类型、归一化约定及梯度是否保留。
-
 from functools import lru_cache
 from typing import List, Optional, Tuple, Union
 
@@ -27,7 +24,6 @@ __all__ = ["MetaParams", "MetaConv2d"]
 DEBUG = False
 
 
-# [中文注释] 定义 MetaParams 类，封装模型状态、参数和方法。
 class MetaParams(nn.Module):
     path_depth: int
     path_multiplier: int
@@ -46,7 +42,6 @@ class MetaParams(nn.Module):
     lambda_data: float
     pixel_size_data: float
 
-    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(
         self,
         path_depth: int = 2,
@@ -163,7 +158,6 @@ class MetaParams(nn.Module):
         self.build_parameters()
         self.reset_parameters()
 
-    # [中文注释] 实现 build_parameters；结合调用处确认数据流和物理意义。
     def build_parameters(self) -> None:
         self.pixel_size = nn.Parameter(
             torch.empty(1, device=self.device),
@@ -234,7 +228,6 @@ class MetaParams(nn.Module):
             self.swap_permutation = None
             self.swap_alm_multiplier = None
 
-    # [中文注释] 实现 reset_parameters；结合调用处确认数据流和物理意义。
     def reset_parameters(self):
         self.pixel_size.data.fill_(self.pixel_size_data)
         self.delta_z.data.fill_(self.delta_z_data)
@@ -259,64 +252,50 @@ class MetaParams(nn.Module):
         if self.swap_alm_multiplier is not None:
             self.swap_alm_multiplier.data.zero_()
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_delta_z_mode(self, mode: bool = True):
         self.delta_z_mode = mode
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_pixel_size_mode(self, mode: bool = True):
         self.pixel_size_mode = mode
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_lambda_mode(self, mode: bool = True):
         self.lambda_mode = mode
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_rotate_mode(self, mode: bool = True):
         self.rotate_mode = mode
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_gumbel_temperature(self, T: float = 5.0):
         self.gumbel_T = T
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_gumbel_mode(self, mode: str = "gumbel_soft"):
         self.gumbel_mode = mode
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_swap_mode(self, mode: bool = True):
         self.swap_mode = mode
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_pixel_size_res(self, res: int) -> None:
         self.pixel_size_res = res
         self.pixel_size_quantizer.set_resolution(res)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_delta_z_res(self, res: int) -> None:
         self.delta_z_res = res
         self.delta_z_quantizer.set_resolution(res)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_delta_z_data(self, data: float) -> None:
         self.delta_z_data = data
         self.delta_z.data.fill_(self.delta_z_data)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_lambda_data(self, data: float) -> None:
         self.lambda_data = data
         self.lambda_.data.fill_(self.lambda_data)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_pixel_size_data(self, data: float) -> None:
         self.pixel_size_data = data
         self.pixel_size.data.fill_(self.pixel_size_data)
 
-    # [中文注释] 实现 build_pixel_size；结合调用处确认数据流和物理意义。
     def build_pixel_size(self) -> Tensor:
         return self.pixel_size.abs()  # [1] positive only
 
-    # [中文注释] 实现 build_delta_z；结合调用处确认数据流和物理意义。
     def build_delta_z(self, stage: int = 0) -> Tensor:
         if self.delta_z_mode == "train_stage":
             delta_z = self.delta_z[stage]
@@ -327,11 +306,9 @@ class MetaParams(nn.Module):
 
         return self.delta_z_quantizer(delta_z.abs())  # [1] positive only
 
-    # [中文注释] 实现 build_lambda；结合调用处确认数据流和物理意义。
     def build_lambda(self) -> Tensor:
         return self.lambda_.abs()
 
-    # [中文注释] 实现 build_constraint_pixel_size_and_lambda；结合调用处确认数据流和物理意义。
     def build_constraint_pixel_size_and_lambda(self) -> Tuple[Tensor, Tensor]:
         ## pixel_size and lambda are both positive
         pixel_size = self.build_pixel_size()
@@ -341,14 +318,12 @@ class MetaParams(nn.Module):
 
         return self.pixel_size_quantizer(pixel_size), self.lambda_quantizer(lambda_)
 
-    # [中文注释] 实现 update_lambda_pixel_size；结合调用处确认数据流和物理意义。
     def update_lambda_pixel_size(self) -> None:
         with torch.no_grad():
             pixel_size, lambda_ = self.build_constraint_pixel_size_and_lambda()
             self.pixel_size.data.copy_(pixel_size)
             self.lambda_.data.copy_(lambda_)
 
-    # [中文注释] 实现 build_rotate_mask；结合调用处确认数据流和物理意义。
     def build_rotate_mask(self, mode=None, batch_size: int = 32) -> Tensor:
         mode = mode or self.gumbel_mode
         logits = self.rotate_gumbel_coeff  # [m, d, 4]
@@ -393,7 +368,6 @@ class MetaParams(nn.Module):
             raise NotImplementedError(f"Invalid gumbel_mode: {mode}")
         return self.rotate_mask  # [m, d, 4]
 
-    # [中文注释] 实现 apply_rotate_mask；结合调用处确认数据流和物理意义。
     def apply_rotate_mask(self, weight: Tensor, rotate_mask: Tensor):
         ## weight is the metasurface phases [m, d, 2, s, s]
         ## rotate_mask is the rotation mask sampled using gubem softmax trick [m, d, 8] or [m, d, 9]
@@ -438,7 +412,6 @@ class MetaParams(nn.Module):
 
         return weight  # [m,d,2,s,s]
 
-    # [中文注释] 实现 build_swap_permutation；结合调用处确认数据流和物理意义。
     def build_swap_permutation(self) -> Tensor:
         ## reparametrization of permutation matrix to relax the constraint
         # abs -> row/col L1-normalization -> projection to legal permutation and stop gradient
@@ -459,7 +432,6 @@ class MetaParams(nn.Module):
             )  # W -> P # once it is very close to permutation, it will be trapped and legalized without any gradients.
         return weight
 
-    # [中文注释] 实现 apply_swap；结合调用处确认数据流和物理意义。
     def apply_swap(self, weight: Tensor):
         ## weight is the metasurface phases [m, d, 2, s, s]
         ## swap_permutation is the permutation matrix [d, m, m] or [dm, dm]
@@ -484,7 +456,6 @@ class MetaParams(nn.Module):
 
         return weight
 
-    # [中文注释] 读取模型状态或计算结果；核对返回值维度。
     def get_swap_loss(self):
         """https://www.math.uci.edu/~jxin/AutoShuffleNet_KDD2020F.pdf"""
         weight = self.build_swap_permutation()
@@ -494,7 +465,6 @@ class MetaParams(nn.Module):
         )
         return loss
 
-    # [中文注释] 读取模型状态或计算结果；核对返回值维度。
     def get_swap_alm_loss(self, rho: float = 0.1):
         if self.swap_mode == "fixed":
             return 0
@@ -514,13 +484,11 @@ class MetaParams(nn.Module):
         )
         return loss
 
-    # [中文注释] 实现 check_perm；结合调用处确认数据流和物理意义。
     def check_perm(self, indices):
         return tuple(range(len(indices))) == tuple(
             sorted(indices.cpu().numpy().tolist())
         )
 
-    # [中文注释] 实现 _get_num_crossings；结合调用处确认数据流和物理意义。
     def _get_num_crossings(self, in_indices):
         res = 0
         for idx, i in enumerate(in_indices):
@@ -529,7 +497,6 @@ class MetaParams(nn.Module):
                     res += 1
         return res
 
-    # [中文注释] 实现 unitary_projection；结合调用处确认数据流和物理意义。
     def unitary_projection(self, w: Tensor, n_step=10, t=0.005, noise_std=0.01):
         w = w.div(t).softmax(dim=-1).round()
         legal_solution = []
@@ -546,7 +513,6 @@ class MetaParams(nn.Module):
         w = legal_solution[0][1]
         return w
 
-    # [中文注释] 实现 update_swap_alm_multiplier；结合调用处确认数据流和物理意义。
     def update_swap_alm_multiplier(
         self, rho: float = 0.1, max_lambda: Optional[float] = None
     ):
@@ -571,7 +537,6 @@ class MetaParams(nn.Module):
             if max_lambda is not None:
                 self.swap_alm_multiplier.data.clamp_max_(max_lambda)
 
-    # [中文注释] 实现 extra_repr；结合调用处确认数据流和物理意义。
     def extra_repr(self):
         if self.path_depth is not None:
             s = "path_depth={path_depth}"
@@ -612,9 +577,7 @@ class MetaParams(nn.Module):
         return s.format(**self.__dict__)
 
 
-# [中文注释] 定义 _MetaConv2dMultiPath 类，封装模型状态、参数和方法。
 class _MetaConv2dMultiPath(Meta_Layer_BASE):
-    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(
         self,
         in_channels: int,
@@ -730,7 +693,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
         self.build_parameters(bias=bias)
         self.reset_parameters()
 
-    # [中文注释] 实现 build_parameters；结合调用处确认数据流和物理意义。
     def build_parameters(self, bias: bool) -> None:
         self.meta_params = None
         self.in_channels_flat = self.in_channels // self.groups
@@ -817,7 +779,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
         else:
             self.register_parameter("bias", None)
 
-    # [中文注释] 实现 build_path_weight；结合调用处确认数据流和物理意义。
     def build_path_weight(self):
         # Ensure normalization across each n x n tensor
         path_weight = self.path_weight
@@ -840,19 +801,16 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
 
         return path_weight
 
-    # [中文注释] 实现 reset_parameters；结合调用处确认数据流和物理意义。
     def reset_parameters(self):
         super().reset_parameters()
         nn.init.constant_(self.alm_multiplier.data, 0)
         # nn.init.constant_(self.alpha.data, 0.002)
         # nn.init.constant_(self.beta.data, 1)
 
-    # [中文注释] 实现 phase_rounding；结合调用处确认数据流和物理意义。
     def phase_rounding(self):
         with torch.no_grad():
             self.weight.copy_((self.weight + torch.pi) % (2 * torch.pi) - torch.pi)
 
-    # [中文注释] 读取模型状态或计算结果；核对返回值维度。
     def get_perm_loss(self):
         path_weight = self.build_path_weight()
         loss = path_weight.data.norm(p=1, dim=1).sub(
@@ -860,7 +818,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
         ).mean(dim=-1) + (1 - path_weight.data.norm(p=2, dim=2)).mean(dim=(-1))
         return loss
 
-    # [中文注释] 读取模型状态或计算结果；核对返回值维度。
     def get_alm_perm_loss(self, rho: float = 0.1):
         ## quadratic tern is also controlled multiplier
         path_weight = self.build_path_weight()
@@ -882,7 +839,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
 
         return loss
 
-    # [中文注释] 实现 update_alm_multiplier；结合调用处确认数据流和物理意义。
     def update_alm_multiplier(
         self, rho: float = 0.1, max_lambda: Optional[float] = None
     ):
@@ -906,7 +862,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
             if max_lambda is not None:
                 self.alm_multiplier.data.clamp_max_(max_lambda)
 
-    # [中文注释] 实现 path_generation；结合调用处确认数据流和物理意义。
     def path_generation(self, path_weight):
         path_before_transpose = torch.argmax(path_weight, dim=-1)
         path_after_transpose = torch.transpose(path_before_transpose, 0, 1)
@@ -921,7 +876,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
 
         return repeated_a.unsqueeze(0).expand(self.out_channels, -1, -1)
 
-    # [中文注释] 实现 build_initial_path；结合调用处确认数据流和物理意义。
     def build_initial_path(self):
         # [[0000],[1111], [2222]]
         # Generate a tensor of size (m, 1) ranging from 0 to m-1
@@ -944,7 +898,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
             )  # [outc,inc,d]
         return repeated_a
 
-    # [中文注释] 实现 build_alpha；结合调用处确认数据流和物理意义。
     def build_alpha(self) -> Tensor:
         alpha_pre = self.alpha_pre
         alpha_post = self.alpha_post
@@ -952,7 +905,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
             alpha_post
         )
 
-    # [中文注释] 实现 build_beta；结合调用处确认数据流和物理意义。
     def build_beta(self) -> Tensor:
         beta = self.beta
         if beta is not None:
@@ -962,7 +914,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
         # beta = torch.clamp(beta, min=0, max=1) # Add sigmoid or tanh
         return beta  # [outc, inc//group, 1, 1]
 
-    # [中文注释] 实现 build_weight；结合调用处确认数据流和物理意义。
     def build_weight(self) -> Tensor:
         paths = self.build_initial_path()
 
@@ -984,7 +935,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
         return weight
 
     @lru_cache(maxsize=32)
-    # [中文注释] 实现 construct_coordinate_diff；结合调用处确认数据流和物理意义。
     def construct_coordinate_diff(self, k):
         # Generate a grid of x and y coordinates
         x = torch.arange(k, device=self.device)
@@ -999,7 +949,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
         coord_diff = positions[:, None, :] - positions[None, :, :]  # [k,k,2]
         return coord_diff
 
-    # [中文注释] 实现 encode_x_information；结合调用处确认数据流和物理意义。
     def encode_x_information(self, input: Tensor) -> Tensor:
         if self.encode_mode == "intensity":
             input = input.sqrt()
@@ -1014,7 +963,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
             raise NotImplementedError(f"Invalid encode_mode: {self.encode_mode}")
         return input
 
-    # [中文注释] 实现 build_diffraction_matrix；结合调用处确认数据流和物理意义。
     def build_diffraction_matrix(self, stage: int = 0) -> Tensor:
         k = self.kernel_size[0]
         # Coordinates for the first matrix
@@ -1043,7 +991,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
         )
         return self.transfer_matrix
 
-    # [中文注释] 实现 scale；结合调用处确认数据流和物理意义。
     def scale(self, x, size, mode="bilinear"):
         current_size = x.shape[-2:]
 
@@ -1076,7 +1023,6 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
 
         return x
 
-    # [中文注释] 实现 _forward_impl；结合调用处确认数据流和物理意义。
     def _forward_impl(self, x: Tensor) -> Tensor:
         # modulation
         # x: [bs, inc, h, w] real
@@ -1196,13 +1142,11 @@ class _MetaConv2dMultiPath(Meta_Layer_BASE):
 
         return x  # [bs, outc, h, w]
 
-    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x: Tensor) -> Tensor:
         return self._forward_impl(x)
 
 
 @MODELS.register_module()
-# [中文注释] 定义 MetaConv2d 类，封装模型状态、参数和方法。
 class MetaConv2d(Meta_Layer_BASE):
     _conv_types = _MetaConv2dMultiPath
 
@@ -1239,7 +1183,6 @@ class MetaConv2d(Meta_Layer_BASE):
     gumbel_mode: str
     enable_identity: bool
 
-    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(
         self,
         in_channels: int,
@@ -1406,7 +1349,6 @@ class MetaConv2d(Meta_Layer_BASE):
         else:
             self.register_parameter("bias", None)
 
-    # [中文注释] 实现 reset_parameters；结合调用处确认数据流和物理意义。
     def reset_parameters(self):
         for m in self.modules():
             if isinstance(m, self._conv_types):
@@ -1414,26 +1356,22 @@ class MetaConv2d(Meta_Layer_BASE):
         if self.bias is not None:
             self.bias.data.zero_()
 
-    # [中文注释] 实现 requires_grad_Meta；结合调用处确认数据流和物理意义。
     def requires_grad_Meta(self, mode: bool = True):
         self._requires_grad_Meta = mode
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.requires_grad_Meta(mode)
 
-    # [中文注释] 读取模型状态或计算结果；核对返回值维度。
     def get_perm_loss(self):
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.get_perm_loss()
 
-    # [中文注释] 读取模型状态或计算结果；核对返回值维度。
     def get_alm_perm_loss(self):
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.get_alm_perm_loss()
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_input_er(self, er: float = 0, x_max: float = 6.0) -> None:
         ## extinction ratio of input modulator
         self.input_er = er
@@ -1442,62 +1380,53 @@ class MetaConv2d(Meta_Layer_BASE):
             if isinstance(m, self._conv_types):
                 m.set_input_er(er, x_max)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_input_snr(self, snr: float = 0) -> None:
         self.input_snr = snr
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.set_input_snr(snr)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_detection_snr(self, snr: float = 0) -> None:
         self.detection_snr = snr
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.set_detection_snr(snr)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_weight_train(self, flag: bool = True) -> None:
         self.weight_train = flag
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.weight_train = flag
 
-    # [中文注释] 实现 phase_rounding；结合调用处确认数据流和物理意义。
     def phase_rounding(self) -> None:
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.phase_rounding()
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_alpha_train(self, flag: List = [True, True]) -> None:
         self.alpha_train = flag
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.alpha_train = flag
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_skip_path(self, flag: bool = True) -> None:
         self.skip_path = flag
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.skip_path = flag
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_skip_meta(self, flag: bool = False) -> None:
         self.skip_meta = flag
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.skip_meta = flag
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_scale_mode(self, mode: str = "bilinear") -> None:
         self.scale_mode = mode
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.scale_mode = mode
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_encode_mode(self, mode: str = "mag") -> None:
         self.encode_mode = mode
         for m in self.modules():
@@ -1505,7 +1434,6 @@ class MetaConv2d(Meta_Layer_BASE):
                 m.encode_mode = mode
 
     @property
-    # [中文注释] 实现 _weight；结合调用处确认数据流和物理意义。
     def _weight(self):
         # control pads to complex transfer matrix
         # [p, q, n_pads] real -> [p, q, k, k] complex
@@ -1516,7 +1444,6 @@ class MetaConv2d(Meta_Layer_BASE):
         return weights
 
     @property
-    # [中文注释] 实现 _weight_unroll；结合调用处确认数据流和物理意义。
     def _weight_unroll(self):
         weights = []
         for m in self.modules():
@@ -1525,7 +1452,6 @@ class MetaConv2d(Meta_Layer_BASE):
         return weights
 
     @property
-    # [中文注释] 实现 _weight_complex；结合调用处确认数据流和物理意义。
     def _weight_complex(self):
         weights = []
         for m in self.modules():
@@ -1533,7 +1459,6 @@ class MetaConv2d(Meta_Layer_BASE):
                 weights.append(m.build_weight(m._build_weight()))
         return weights
 
-    # [中文注释] 实现 _forward_impl；结合调用处确认数据流和物理意义。
     def _forward_impl(self, x):
         y = self._conv_pos(x)
         if self._conv_neg is not None:
@@ -1544,7 +1469,6 @@ class MetaConv2d(Meta_Layer_BASE):
             y = y + self.bias[None, :, None, None]
         return y
 
-    # [中文注释] 读取模型状态或计算结果；核对返回值维度。
     def get_output_dim(self, img_height: int, img_width: int) -> Tuple[int, int]:
         h_out = (img_height - self.kernel_size[0] + 2 * self.padding[0]) / self.stride[
             0
@@ -1554,7 +1478,6 @@ class MetaConv2d(Meta_Layer_BASE):
         ] + 1
         return (int(h_out), int(w_out))
 
-    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x):
         if self.in_bit <= 8:
             x = self.input_quantizer(x)
@@ -1565,7 +1488,6 @@ class MetaConv2d(Meta_Layer_BASE):
 
         return out
 
-    # [中文注释] 实现 extra_repr；结合调用处确认数据流和物理意义。
     def extra_repr(self):
         s = (
             "{in_channels}, {mid_channels}, {out_channels}, kernel_size={kernel_size}"

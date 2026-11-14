@@ -1,3 +1,7 @@
+# 中文学习注释：MAPS/Ceviche 第三方核心依赖阅读辅助。未改变上游算法、参数或执行逻辑。
+# 模块定位：thirdparty/MAPS_old/core/fdfd/pardiso_solver.py。重点追踪 Maxwell 离散、线性系统、边界/源项、伴随导数及结构参数化。
+# 注意：这里的注释是学习说明，不代表上游项目作者原始注释。
+
 from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
@@ -39,8 +43,10 @@ phase options
  -1 -> Release all internal memory for all matrices
 """
 
+# [中文注释] 定义 pardisoSolver 类，封装电磁求解/优化相关状态。
 class pardisoSolver(object):
     """Wrapper class for Intel MKL Pardiso solver. """
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, A, mtype=11, double: bool = True, verbose=False):
         '''
         Parameters
@@ -146,18 +152,22 @@ class pardisoSolver(object):
         else:
             self.iparm[27] = 1
 
+    # [中文注释] 实现 clear；结合调用处核对物理量、网格维度、边界条件和单位。
     def clear(self):
         # Release Pardiso resources
         self.run_pardiso(phase=-1)
         # Also remove references to large arrays if you are sure you won't reuse this solver object
 
+    # [中文注释] 实现 factor；结合调用处核对物理量、网格维度、边界条件和单位。
     def factor(self):
         out = self.run_pardiso(phase=12)
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def solve(self, rhs, transposed: bool = False):
         x = self.run_pardiso(phase=33, rhs=rhs, transposed=transposed)
         return x
 
+    # [中文注释] 实现 run_pardiso；结合调用处核对物理量、网格维度、边界条件和单位。
     def run_pardiso(self, phase, rhs=None, transposed: bool = False):
         '''
         Run specified phase of the Pardiso solver.

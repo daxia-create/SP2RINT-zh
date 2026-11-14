@@ -1,9 +1,3 @@
-# -----------------------------------------------------------------------------
-# 中文学习注释：仅增加说明，不修改原始算法、变量、默认参数或执行流程。
-# 文件职责：根据配置构建数据集、光学网络、分类器、损失函数和优化器。
-# 阅读建议：结合调用处检查输入/输出形状、复数数据类型、单位、边界条件及梯度流。
-# -----------------------------------------------------------------------------
-
 from typing import Optional, Tuple
 
 import torch
@@ -55,7 +49,6 @@ __all__ = [
 ]
 
 
-# [中文注释] 实现 make_dataloader 功能；请结合调用处确认输入、输出和状态变化。
 def make_dataloader(
     cfg: dict = None, splits=["train", "valid", "test"]
 ) -> Tuple[DataLoader, DataLoader]:
@@ -266,7 +259,6 @@ def make_dataloader(
     return train_loader, validation_loader, test_loader
 
 
-# [中文注释] 实现 make_model 功能；请结合调用处确认输入、输出和状态变化。
 def make_model(
     device: Device, model_cfg: Optional[str] = None, random_state: int = None, **kwargs
 ) -> nn.Module:
@@ -414,7 +406,6 @@ def make_model(
     return model
 
 
-# [中文注释] 实现 make_optimizer 功能；请结合调用处确认输入、输出和状态变化。
 def make_optimizer(params, name: str = None, opt_configs=None) -> Optimizer:
     opt_cfg = opt_configs or configs.optimizer
     if name == "sgd":
@@ -486,7 +477,6 @@ def make_optimizer(params, name: str = None, opt_configs=None) -> Optimizer:
     return optimizer
 
 
-# [中文注释] 实现 make_scheduler 功能；请结合调用处确认输入、输出和状态变化。
 def make_scheduler(optimizer: Optimizer, name: str = None, cfgs=None) -> Scheduler:
     cfgs = cfgs or configs
     name = (name or cfgs.scheduler.name).lower()
@@ -543,7 +533,6 @@ def make_scheduler(optimizer: Optimizer, name: str = None, cfgs=None) -> Schedul
     return scheduler
 
 
-# [中文注释] 实现 make_criterion 功能；请结合调用处确认输入、输出和状态变化。
 def make_criterion(name: str = None, cfg=None) -> nn.Module:
     name = (name or configs.criterion.name).lower()
     cfg = cfg or configs.criterion

@@ -1,7 +1,3 @@
-# 中文学习注释：实验/单元测试辅助脚本；仅增加说明，不修改原始执行逻辑。
-# 脚本用途：unitest/ws_outC_wg_gap_sweep.py。运行前核对数据路径、配置、设备及输出目录。
-# 重点检查：实验变量、扫描范围、评价指标、绘图坐标/单位和结果保存位置。
-
 '''
 this script is to sweep the following parameters:
 1. window size for equivalent convolution kernel 
@@ -40,7 +36,6 @@ from pyutils.torch_train import (
 import csv
 import numpy
 
-# [中文注释] 实现 normalize_transfer_matrix；结合脚本目的确认输入、输出和评价量。
 def normalize_transfer_matrix(T: torch.Tensor) -> torch.Tensor:
     col_mean = T.mean(dim=0, keepdim=True)
     col_std = T.std(dim=0, keepdim=True) + 1e-6
@@ -52,13 +47,10 @@ def normalize_transfer_matrix(T: torch.Tensor) -> torch.Tensor:
     T = T - T.min(dim=0, keepdim=True).values
     return T
 
-# [中文注释] 实现 ColumnWiseCosSimLoss；结合脚本目的确认输入、输出和评价量。
 class ColumnWiseCosSimLoss(nn.Module):
-    # [中文注释] 实现 __init__；结合脚本目的确认输入、输出和评价量。
     def __init__(self):
         super().__init__()
 
-    # [中文注释] 实现 forward；结合脚本目的确认输入、输出和评价量。
     def forward(self, target: torch.Tensor, probed: torch.Tensor) -> torch.Tensor:
         """
         Compare two transfer matrices of shape (H, W) using column-wise cosine similarity.
@@ -76,7 +68,6 @@ class ColumnWiseCosSimLoss(nn.Module):
 
         return 1.0 - mean_sim
     
-# [中文注释] 实现 normalize_transfer_matrix；结合脚本目的确认输入、输出和评价量。
 def normalize_transfer_matrix(T: torch.Tensor) -> torch.Tensor:
     """
     Normalize a transfer matrix (shape [..., H, W]) such that:
@@ -100,7 +91,6 @@ def normalize_transfer_matrix(T: torch.Tensor) -> torch.Tensor:
     T = T - T.min(dim=-2, keepdim=True).values
 
     return T
-# [中文注释] 实现 build_donn_input_sources；结合脚本目的确认输入、输出和评价量。
 def build_donn_input_sources(
     num_waveguides: int,
     resolution: int,            # e.g., 50 px/µm
@@ -133,9 +123,7 @@ def build_donn_input_sources(
     return inputs
 
 
-# [中文注释] 实现 MetaSurface；结合脚本目的确认输入、输出和评价量。
 class MetaSurface(nn.Module):
-    # [中文注释] 实现 __init__；结合脚本目的确认输入、输出和评价量。
     def __init__(
             self, 
             num_atom, 
@@ -162,7 +150,6 @@ class MetaSurface(nn.Module):
         else:
             self.normalizer_list = normalizer_list
 
-    # [中文注释] 实现 build_total_sim；结合脚本目的确认输入、输出和评价量。
     def build_total_sim(self):
         total_sim_cfg = DefaultSimulationConfig()
         total_sim_cfg.update(
@@ -204,20 +191,17 @@ class MetaSurface(nn.Module):
         )
         self.opt = total_opt
 
-    # [中文注释] 实现 build_parameter；结合脚本目的确认输入、输出和评价量。
     def build_parameter(self):
         self.weights = nn.Parameter(
             0.05 * torch.ones((self.num_atom), device=self.device)
         )
     
-    # [中文注释] 实现 build_ls_knots；结合脚本目的确认输入、输出和评价量。
     def build_ls_knots(self):
         ls_knots = -0.05 * torch.ones((2 * self.num_atom + 1), device=self.device)
         ls_knots[1::2] = self.weights
 
         return ls_knots
     
-    # [中文注释] 实现 calculate_normalizer；结合脚本目的确认输入、输出和评价量。
     def calculate_normalizer(self):
         full_wave_down_sample_rate = 1
         sources = torch.eye(self.num_atom * round(15 // full_wave_down_sample_rate), device=self.device)
@@ -246,7 +230,6 @@ class MetaSurface(nn.Module):
                 total_normalizer_list.append(source_field[boolean_source_mask].mean())
         return total_normalizer_list
 
-    # [中文注释] 实现 forward；结合脚本目的确认输入、输出和评价量。
     def forward(
             self, 
             sharpness, 
@@ -305,7 +288,6 @@ class MetaSurface(nn.Module):
             self.opt.objective.sims[sim_key[0]].solver.set_cache_mode(False)
         return full_wave_response
 
-# [中文注释] 实现 matching_T；结合脚本目的确认输入、输出和评价量。
 def matching_T(
     num_metasurfaces=2,
     num_atom=32,

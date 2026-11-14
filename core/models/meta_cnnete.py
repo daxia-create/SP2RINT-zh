@@ -1,6 +1,3 @@
-# 中文学习注释：本文件保持上游实现不变；以下说明用于帮助追踪模型职责、张量流和物理含义。
-# 模块定位：core/models/meta_cnnete.py。请结合调用处核对输入/输出维度、复数类型、归一化约定及梯度是否保留。
-
 from collections import OrderedDict
 from typing import List
 
@@ -17,9 +14,7 @@ from .layers.quantized_conv2d import QConv2d
 from .layers.quantized_linear import QLinear
 __all__ = ["Meta_CNNETE", "CNN"]
 
-# [中文注释] 定义 LTNForClassification 类，封装模型状态、参数和方法。
 class LTNForClassification(nn.Module):
-    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(self, soc_out_channels=3, out_H=27, out_W=27, hidden_dim=100, num_classes=10, pooling_kernel=4, pooling_stride=1):
         super().__init__()
         self.conv1x1 = nn.Conv2d(soc_out_channels, soc_out_channels, kernel_size=1, bias=False)
@@ -32,7 +27,6 @@ class LTNForClassification(nn.Module):
         self.fc1 = nn.Linear(flat_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, num_classes)
     
-    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x):
         x = self.conv1x1(x)
         x = self.pool(x)
@@ -41,12 +35,10 @@ class LTNForClassification(nn.Module):
         x = self.fc2(x)
         return x
 
-# [中文注释] 定义 FeatureExtractor1D 类，封装模型状态、参数和方法。
 class FeatureExtractor1D(nn.Module):
     """
     A small CNN-based feature extractor that outputs (B, 1, out_length).
     """
-    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(
         self,
         in_channels: int = 1,
@@ -86,7 +78,6 @@ class FeatureExtractor1D(nn.Module):
             out_bit=8
             )
 
-    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         x: [B, in_channels, H, W]
@@ -108,9 +99,7 @@ class FeatureExtractor1D(nn.Module):
         x = x.unsqueeze(-1)       # => [B, 1, out_length]
         return x
 
-# [中文注释] 定义 Receiver1D 类，封装模型状态、参数和方法。
 class Receiver1D(nn.Module):
-    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(self, in_length: int, out_length: int, apply_softmax: bool = False):
         """
         Partitions 'in_length' into 'out_length' equal segments (or as equal as possible).
@@ -122,7 +111,6 @@ class Receiver1D(nn.Module):
         self.out_length = out_length
         self.apply_softmax = apply_softmax
 
-    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         x: [B, channels, L]  (channels could be 1 or outC)
@@ -175,9 +163,7 @@ class Receiver1D(nn.Module):
 
         return x_part
 
-# [中文注释] 定义 FMNISTFeatureExtractor 类，封装模型状态、参数和方法。
 class FMNISTFeatureExtractor(nn.Module):
-    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(self, in_channels = 1, feature_dim=128):
         super(FMNISTFeatureExtractor, self).__init__()
         # Convolution layers
@@ -205,7 +191,6 @@ class FMNISTFeatureExtractor(nn.Module):
                            out_bit=16
                            )
 
-    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x):
         """
         x: [batch_size, 1, 28, 28] (FMNIST images)
@@ -224,9 +209,7 @@ class FMNISTFeatureExtractor(nn.Module):
         features = self.fc2(x)         # -> [batch_size, feature_dim]
         return features
 
-# [中文注释] 定义 Meta_CNNETE 类，封装模型状态、参数和方法。
 class Meta_CNNETE(Meta_Base):
-    # [中文注释] 初始化层/模型参数；检查默认值、张量维度和设备。
     def __init__(
         self,
         img_height: int,
@@ -296,7 +279,6 @@ class Meta_CNNETE(Meta_Base):
         self.build_layers()
         self.reset_parameters()
 
-    # [中文注释] 实现 build_layers；结合调用处确认数据流和物理意义。
     def build_layers(self):
         if self.feature_extractor_type == "fft":
             raise NotImplementedError("FFT feature extractor is deprecated now")
@@ -455,19 +437,16 @@ class Meta_CNNETE(Meta_Base):
         # )
         # self.classifier = nn.Sequential(self.classifier)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_test_mode(self, test_mode=True):
         for name, module in self.features.named_children():
             if hasattr(module, "set_test_mode"):
                 module.set_test_mode(test_mode)
 
-    # [中文注释] 设置模型状态或参数；检查是否更新缓存/训练变量。
     def set_near2far_matrix(self, near2far_matrix):
         for name, module in self.features.named_children():
             if hasattr(module, "set_near2far_matrix"):
                 module.set_near2far_matrix(near2far_matrix)
 
-    # [中文注释] 前向计算：跟踪输入输出形状、复数光场传播及梯度路径。
     def forward(self, x: Tensor, sharpness: float = None) -> Tensor:
         if sharpness is not None:
             assert self.conv_cfg["TM_model_method"] == "end2end", "only end2end TM model can use sharpness"
@@ -569,7 +548,6 @@ class Meta_CNNETE(Meta_Base):
         return x, inner_fields
 
 
-# [中文注释] 实现 CNN；结合调用处确认数据流和物理意义。
 def CNN(*args, **kwargs):
     kwargs.pop("conv_cfg")
     kwargs.pop("linear_cfg")

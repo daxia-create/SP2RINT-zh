@@ -1,6 +1,3 @@
-# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
-# 模块路径：core/datasets/cifar100.py；关注数据来源、预处理、样本/标签格式、张量形状和数据划分。
-
 from typing import Any, Callable, List, Optional, Tuple
 
 import torch
@@ -17,12 +14,10 @@ resize_modes = {
 __all__ = ["CIFAR100Dataset"]
 
 
-# [中文注释] 定义 PreProcessCIFAR100 数据类/对象，封装数据集状态和读取接口。
 class PreProcessCIFAR100(datasets.CIFAR100):
     mean = [0.50707516, 0.48654887, 0.44091784]
     std = [0.26733429, 0.25643846, 0.27615047]
 
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         root: str,
@@ -43,7 +38,6 @@ class PreProcessCIFAR100(datasets.CIFAR100):
         # Preporcess targets
         self.targets = torch.as_tensor(self.targets).to(torch.int64)
 
-    # [中文注释] 返回单个样本及标签；确认数据类型、维度和变换顺序。
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         img, target = self.data[index], self.targets[index]
         # img = self.data[index]
@@ -58,9 +52,7 @@ class PreProcessCIFAR100(datasets.CIFAR100):
         return img, target
 
 
-# [中文注释] 定义 CIFAR100Dataset 数据类/对象，封装数据集状态和读取接口。
 class CIFAR100Dataset(torch.utils.data.Dataset):
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         root: str,
@@ -95,7 +87,6 @@ class CIFAR100Dataset(torch.utils.data.Dataset):
         self.load()
         self.n_instance = len(self.data)
 
-    # [中文注释] 读取数据并转换为训练所需格式；核对样本和标签形状。
     def load(self):
         if self.augment:
             transform_train = [
@@ -226,7 +217,6 @@ class CIFAR100Dataset(torch.utils.data.Dataset):
                     f"Only use the front {self.n_test_samples} " f"images as TEST set."
                 )
 
-    # [中文注释] 返回单个样本及标签；确认数据类型、维度和变换顺序。
     def __getitem__(self, index: int):
         img = self.data[index][0]
         if self.binarize:
@@ -237,12 +227,10 @@ class CIFAR100Dataset(torch.utils.data.Dataset):
         digit = self.digits_of_interest.index(self.data[index][1])
         return img, torch.tensor(digit).long()
 
-    # [中文注释] 返回数据集样本数量。
     def __len__(self) -> int:
         return self.n_instance
 
 
-# [中文注释] 实现 test；结合调用处确认数据流及预处理含义。
 def test():
     cifar10 = CIFAR100Dataset(
         root="../../data",

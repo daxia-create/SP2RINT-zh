@@ -1,3 +1,7 @@
+# 中文学习注释：MAPS/Ceviche 第三方核心依赖阅读辅助。未改变上游算法、参数或执行逻辑。
+# 模块定位：thirdparty/MAPS_old/core/invdes/models/layers/parametrization/levelset.py。重点追踪 Maxwell 离散、线性系统、边界/源项、伴随导数及结构参数化。
+# 注意：这里的注释是学习说明，不代表上游项目作者原始注释。
+
 """
 Date: 2024-10-05 02:02:33
 LastEditors: Jiaqi Gu && jiaqigu@asu.edu
@@ -74,9 +78,11 @@ __all__ = ["LeveSetParameterization"]
 #         return ls  ## level set surface with the same shape as z0
 
 
+# [中文注释] 定义 LevelSetInterp 类，封装电磁求解/优化相关状态。
 class LevelSetInterp(object):
     """This class implements the level set surface using various interpolation methods."""
 
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         x0: Tensor = None,
@@ -108,24 +114,29 @@ class LevelSetInterp(object):
         elif self.interpolation == "bilinear":
             self.build_bilinear_model()
 
+    # [中文注释] 实现 build_gaussian_model；结合调用处核对物理量、网格维度、边界条件和单位。
     def build_gaussian_model(self):
         gauss_kernel = self.gaussian(self.xy0, self.xy0)
         self.model = torch.matmul(torch.linalg.inv(gauss_kernel), self.z0.flatten())
 
+    # [中文注释] 实现 gaussian；结合调用处核对物理量、网格维度、边界条件和单位。
     def gaussian(self, xyi, xyj):
         dist_sq = (xyi[:, 1].reshape(-1, 1) - xyj[:, 1].reshape(1, -1)).square_() + (
             xyi[:, 0].reshape(-1, 1) - xyj[:, 0].reshape(1, -1)
         ).square_()
         return dist_sq.mul_(-1 / (2 * self.sig**2)).exp_()
 
+    # [中文注释] 实现 build_linear_model；结合调用处核对物理量、网格维度、边界条件和单位。
     def build_linear_model(self):
         # For linear interpolation, no precomputed model is required.
         pass
 
+    # [中文注释] 实现 build_bilinear_model；结合调用处核对物理量、网格维度、边界条件和单位。
     def build_bilinear_model(self):
         # For bilinear interpolation, no precomputed model is required.
         pass
 
+    # [中文注释] 实现 handle_constant_dimension；结合调用处核对物理量、网格维度、边界条件和单位。
     def handle_constant_dimension(self, x1, y1):
         """Handle cases where one dimension of z0 has only one knot."""
         if self.n_phi[0] == 1:  # Single knot along the x-axis
@@ -153,6 +164,7 @@ class LevelSetInterp(object):
             z_const = None  # No constant dimension
         return z_const
 
+    # [中文注释] 实现 linear_interpolate；结合调用处核对物理量、网格维度、边界条件和单位。
     def linear_interpolate(self, x1, y1):
         # Perform 1D linear interpolation for each axis independently.
         x0 = self.xy0[:, 0].unique(sorted=True)
@@ -184,10 +196,12 @@ class LevelSetInterp(object):
             + wx2 * wy2 * z_x2_y2
         )
 
+    # [中文注释] 实现 bilinear_interpolate；结合调用处核对物理量、网格维度、边界条件和单位。
     def bilinear_interpolate(self, x1, y1):
         # Use bilinear interpolation, equivalent to linear in 2D.
         return self.linear_interpolate(x1, y1)
 
+    # [中文注释] 实现 get_ls；结合调用处核对物理量、网格维度、边界条件和单位。
     def get_ls(self, x1, y1, shape):
         xx, yy = torch.meshgrid(x1, y1, indexing="ij")
         xx = xx.to(self.device)
@@ -214,7 +228,9 @@ class LevelSetInterp(object):
         return ls  # Level set surface with the same shape as z0
 
 
+# [中文注释] 定义 GetLevelSetEps 类，封装电磁求解/优化相关状态。
 class GetLevelSetEps(nn.Module):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, fw_threshold, bw_threshold, mode, device):
         super().__init__()
         self.fw_threshold = fw_threshold
@@ -228,6 +244,7 @@ class GetLevelSetEps(nn.Module):
             device=device,
         )  # 0.5 is hard coded here since this is only the level set, don't need to consider value other than 0.5
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(
         self,
         design_param,
@@ -259,7 +276,9 @@ class GetLevelSetEps(nn.Module):
         return eps, phi
 
 
+# [中文注释] 定义 LeveSetParameterization 类，封装电磁求解/优化相关状态。
 class LeveSetParameterization(BaseParametrization):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         *args,
@@ -305,6 +324,7 @@ class LeveSetParameterization(BaseParametrization):
         )
 
     @lru_cache(maxsize=3)
+    # [中文注释] 实现 _prepare_parameters_levelset；结合调用处核对物理量、网格维度、边界条件和单位。
     def _prepare_parameters_levelset(
         self,
         rho_resolution: Tuple[int, int],
@@ -354,6 +374,7 @@ class LeveSetParameterization(BaseParametrization):
 
         return param_dict
 
+    # [中文注释] 实现 _build_parameters_levelset；结合调用处核对物理量、网格维度、边界条件和单位。
     def _build_parameters_levelset(self, param_cfg, region_cfg):
         param_dict = self._prepare_parameters_levelset(
             tuple(param_cfg["rho_resolution"]),
@@ -366,6 +387,7 @@ class LeveSetParameterization(BaseParametrization):
         weight_dict = dict(ls_knots=ls_knots)
         return weight_dict, param_dict
 
+    # [中文注释] 实现 _reset_parameters_levelset；结合调用处核对物理量、网格维度、边界条件和单位。
     def _reset_parameters_levelset(
         self, weight_dict, param_cfg, region_cfg, init_method: str = "random"
     ):
@@ -553,6 +575,7 @@ class LeveSetParameterization(BaseParametrization):
         else:
             raise ValueError(f"Unsupported initialization method: {init_method}")
 
+    # [中文注释] 实现 _build_permittivity；结合调用处核对物理量、网格维度、边界条件和单位。
     def _build_permittivity(
         self, weights, rho, phi, n_phi, sharpness: float, ls_knots=None
     ):
@@ -586,6 +609,7 @@ class LeveSetParameterization(BaseParametrization):
 
         return eps_phi
 
+    # [中文注释] 实现 build_permittivity；结合调用处核对物理量、网格维度、边界条件和单位。
     def build_permittivity(self, weights, sharpness: float, ls_knots=None):
         ## this is the high resolution, e.g., res=200, 310 permittivity
         ## return:

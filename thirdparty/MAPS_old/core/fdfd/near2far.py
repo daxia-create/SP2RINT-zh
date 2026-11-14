@@ -1,3 +1,7 @@
+# 中文学习注释：MAPS/Ceviche 第三方核心依赖阅读辅助。未改变上游算法、参数或执行逻辑。
+# 模块定位：thirdparty/MAPS_old/core/fdfd/near2far.py。重点追踪 Maxwell 离散、线性系统、边界/源项、伴随导数及结构参数化。
+# 注意：这里的注释是学习说明，不代表上游项目作者原始注释。
+
 """
 Date: 1969-12-31 17:00:00
 LastEditors: Jiaqi Gu && jiaqigu@asu.edu
@@ -20,6 +24,7 @@ from ...thirdparty.ceviche.constants import C_0, EPSILON_0, MU_0
 
 # https://digitalcommons.calpoly.edu/cgi/viewcontent.cgi?article=1264&context=phy_fac
 # full RS propagation equation
+# [中文注释] 实现 RayleighSommerfieldPropagation；结合调用处核对物理量、网格维度、边界条件和单位。
 def RayleighSommerfieldPropagation(
     x: Tensor,  # far field location, um (x,y)
     freqs: Tensor,  # freqs = 1/lambda
@@ -53,6 +58,7 @@ def RayleighSommerfieldPropagation(
     return farfield * 2
 
 
+# [中文注释] 实现 get_farfields_Rayleigh_Sommerfeld；结合调用处核对物理量、网格维度、边界条件和单位。
 def get_farfields_Rayleigh_Sommerfeld(
     nearfield_slice,  # list of nearfield monitor
     nearfield_slice_info,  # list of nearfield monitor
@@ -132,6 +138,7 @@ def get_farfields_Rayleigh_Sommerfeld(
     return far_fields
 
 
+# [中文注释] 实现 get_farfields_GreenFunction；结合调用处核对物理量、网格维度、边界条件和单位。
 def get_farfields_GreenFunction(
     nearfield_slices,  # list of nearfield monitor
     nearfield_slices_info,  # list of nearfield monitor
@@ -245,6 +252,7 @@ def get_farfields_GreenFunction(
 
 
 # @torch.compile
+# [中文注释] 实现 GreenFunctionProjection；结合调用处核对物理量、网格维度、边界条件和单位。
 def GreenFunctionProjection(
     x: Tensor,  # far field location, um (x,y)
     freqs: Tensor,  # freqs = 1/lambda
@@ -380,6 +388,7 @@ def GreenFunctionProjection(
 
         # operations between unit vectors and currents
         # @torch.compile
+        # [中文注释] 实现 r_x_current；结合调用处核对物理量、网格维度、边界条件和单位。
         def r_x_current(
             current: Tuple[Tensor, ...], is_2d: bool = True
         ) -> Tuple[Tensor, ...]:
@@ -398,6 +407,7 @@ def GreenFunctionProjection(
                 ]
 
         # @torch.compile
+        # [中文注释] 实现 r_dot_current；结合调用处核对物理量、网格维度、边界条件和单位。
         def r_dot_current(current: Tuple[Tensor, ...], is_2d: bool = True) -> Tensor:
             """Dot product between the r unit vector and the current."""
             if is_2d:
@@ -410,6 +420,7 @@ def GreenFunctionProjection(
                 )
 
         # @torch.compile
+        # [中文注释] 实现 r_dot_current_dtheta；结合调用处核对物理量、网格维度、边界条件和单位。
         def r_dot_current_dtheta(
             current: Tuple[Tensor, ...], is_2d: bool = True
         ) -> Tensor:
@@ -424,11 +435,13 @@ def GreenFunctionProjection(
                 )
 
         # @torch.compile
+        # [中文注释] 实现 r_dot_current_dphi_div_sin_theta；结合调用处核对物理量、网格维度、边界条件和单位。
         def r_dot_current_dphi_div_sin_theta(current: Tuple[Tensor, ...]) -> Tensor:
             """Phi derivative of the dot product between the r unit vector and the current,
             analytically divided by sin theta."""
             return -sin_phi * current[0] + cos_phi * current[1]
 
+        # [中文注释] 实现 grad_Gr_r_dot_current；结合调用处核对物理量、网格维度、边界条件和单位。
         def grad_Gr_r_dot_current(
             current: Tuple[Tensor, ...],
         ) -> Tuple[Tensor, ...]:
@@ -452,6 +465,7 @@ def GreenFunctionProjection(
                 cos_phi=cos_phi,
             )  # fx, fy, fz
 
+        # [中文注释] 实现 potential_terms；结合调用处核对物理量、网格维度、边界条件和单位。
         def potential_terms(current: Tuple[Tensor, ...], const: complex):
             """Assemble vector potential and its derivatives."""
             r_x_c = r_x_current(current)
@@ -528,6 +542,7 @@ def GreenFunctionProjection(
 
 
 # @torch.compile
+# [中文注释] 实现 _green_functions；结合调用处核对物理量、网格维度、边界条件和单位。
 def _green_functions(k, r_obs):
     kr = k * r_obs  # [n, s, nf]
     H0 = hankel(0, kr, kind=2)

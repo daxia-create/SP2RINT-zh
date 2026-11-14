@@ -1,6 +1,3 @@
-# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
-# 模块路径：core/models/layers/ptc_conv2d.py；请结合调用处核对输入/输出形状、设备、数据类型和梯度流。
-
 from typing import Optional, Tuple
 
 import numpy as np
@@ -26,7 +23,6 @@ __all__ = [
 
 
 @MODELS.register_module()
-# [中文注释] 定义 PTCBlockConv2d 类，封装模块状态、参数和计算方法。
 class PTCBlockConv2d(ONNBaseLayer):
     """
     blocking Conv2d layer constructed by cascaded PTCs.
@@ -64,7 +60,6 @@ class PTCBlockConv2d(ONNBaseLayer):
     col_prune_mask: Tensor | None
     prune_mask: Tensor | None
 
-    # [中文注释] 初始化模块参数和内部状态，检查默认值及张量维度。
     def __init__(
         self,
         in_channels: int,
@@ -165,7 +160,6 @@ class PTCBlockConv2d(ONNBaseLayer):
         self.reset_parameters()
 
     @classmethod
-    # [中文注释] 实现 from_layer；结合调用处确认功能、输入输出及状态变化。
     def from_layer(
         cls,
         layer: nn.Conv2d,
@@ -212,7 +206,6 @@ class PTCBlockConv2d(ONNBaseLayer):
 
         return instance
 
-    # [中文注释] 实现 cycles；结合调用处确认功能、输入输出及状态变化。
     def cycles(self, x_size=None, R: int = 8, C: int = 8) -> int:
         bs, input_H, input_W = x_size[0], x_size[-2], x_size[-1]
         output_H = (
@@ -230,7 +223,6 @@ class PTCBlockConv2d(ONNBaseLayer):
         )
         return num_cycles_per_block, num_blocks * num_cycles_per_block
 
-    # [中文注释] 实现 get_output_dim；结合调用处确认功能、输入输出及状态变化。
     def get_output_dim(self, img_height: int, img_width: int) -> _size:
         h_out = (
             img_height
@@ -246,7 +238,6 @@ class PTCBlockConv2d(ONNBaseLayer):
         ) / self.stride[1] + 1
         return int(h_out), int(w_out)
 
-    # [中文注释] 前向计算：跟踪输入输出张量形状及可微运算。
     def forward(self, x: Tensor) -> Tensor:
         if self.in_bit < 16:
             x = self.input_quantizer(x)
@@ -273,7 +264,6 @@ class PTCBlockConv2d(ONNBaseLayer):
 
         return x
 
-    # [中文注释] 实现 extra_repr；结合调用处确认功能、输入输出及状态变化。
     def extra_repr(self):
         s = (
             "{in_channels}, {out_channels}, kernel_size={kernel_size}"

@@ -1,3 +1,7 @@
+# 中文学习注释：MAPS/Ceviche 第三方核心依赖阅读辅助。未改变上游算法、参数或执行逻辑。
+# 模块定位：thirdparty/MAPS_old/core/fdfd/solver.py。重点追踪 Maxwell 离散、线性系统、边界/源项、伴随导数及结构参数化。
+# 注意：这里的注释是学习说明，不代表上游项目作者原始注释。
+
 # """
 # Date: 2024-10-10 19:50:23
 # LastEditors: Jiaqi Gu && jiaqigu@asu.edu
@@ -592,6 +596,7 @@ except:
 ENABLE_TIMER = False
 
 
+# [中文注释] 实现 coo_torch2cupy；结合调用处核对物理量、网格维度、边界条件和单位。
 def coo_torch2cupy(A):
     A = A.data.coalesce()
     Avals_cp = cp.asarray(A.values())
@@ -621,6 +626,7 @@ ATOL = 1e-8
 """ ========================== SOLVER FUNCTIONS ========================== """
 
 
+# [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
 def _solve_iterative_with_nn_init(
     A, b, neural_solver, eps, iterative_method=DEFAULT_ITERATIVE_METHOD, **kwargs
 ):
@@ -671,6 +677,7 @@ def _solve_iterative_with_nn_init(
 
 
 # Update solve_linear to include the new solver option
+# [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
 def solve_linear(
     A,
     b,
@@ -711,6 +718,7 @@ def solve_linear(
 #         return _solve_direct(A, b, symmetry=symmetry)
 
 
+# [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
 def _solve_direct(A, b, symmetry=False, clear: bool = True, double: bool = True):
     """Direct solver"""
 
@@ -734,6 +742,7 @@ def _solve_direct(A, b, symmetry=False, clear: bool = True, double: bool = True)
         return spl.spsolve(A, b)
 
 
+# [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
 def _solve_iterative(A, b, iterative_method=DEFAULT_ITERATIVE_METHOD, **kwargs):
     """Iterative solver"""
 
@@ -752,6 +761,7 @@ def _solve_iterative(A, b, iterative_method=DEFAULT_ITERATIVE_METHOD, **kwargs):
     return x
 
 
+# [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
 def _solve_cuda(A, b, **kwargs):
     """You could put some other solver here if you're feeling adventurous"""
     raise NotImplementedError("Please implement something fast and exciting here!")
@@ -824,8 +834,10 @@ def _solve_cuda(A, b, **kwargs):
 SCALE = 1e15
 
 
+# [中文注释] 定义 SparseSolveTorchFunction 类，封装电磁求解/优化相关状态。
 class SparseSolveTorchFunction(torch.autograd.Function):
     @staticmethod
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(
         ctx,
         entries_a,
@@ -993,6 +1005,7 @@ class SparseSolveTorchFunction(torch.autograd.Function):
         return x
 
     @staticmethod
+    # [中文注释] 实现 backward；结合调用处核对物理量、网格维度、边界条件和单位。
     def backward(ctx, grad):
         if ctx.use_autodiff:
             return tuple([None] * 20)
@@ -1178,7 +1191,9 @@ class SparseSolveTorchFunction(torch.autograd.Function):
             )
 
 
+# [中文注释] 定义 SparseSolveTorch 类，封装电磁求解/优化相关状态。
 class SparseSolveTorch(torch.nn.Module):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, shape, neural_solver, numerical_solver, use_autodiff=False):
         super(SparseSolveTorch, self).__init__()
         self.shape = shape
@@ -1192,14 +1207,17 @@ class SparseSolveTorch(torch.nn.Module):
 
         self.set_cache_mode(False)
 
+    # [中文注释] 实现 set_shape；结合调用处核对物理量、网格维度、边界条件和单位。
     def set_shape(self, shape):
         self.shape = shape
 
+    # [中文注释] 实现 set_cache_mode；结合调用处核对物理量、网格维度、边界条件和单位。
     def set_cache_mode(self, mode: bool):
         self._cache_mode = mode
         if not mode:
             self.clear_solver_cache()
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def clear_solver_cache(self):
         for key, value in self._solver_cache.items():
             if value is not None:
@@ -1212,6 +1230,7 @@ class SparseSolveTorch(torch.nn.Module):
         #     self._solver_cache["pSolve_adj"].clear()
         #     self._solver_cache["pSolve_adj"] = None
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(
         self,
         entries_a,

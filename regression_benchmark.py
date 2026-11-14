@@ -1,7 +1,3 @@
-# 中文学习注释：仅添加说明，不改变上游代码逻辑。
-# 模块职责：项目级实验入口：负责配置加载、模型构建、训练或适配流程。
-# 阅读时优先追踪配置文件、模型构建、数据加载、训练循环和结果保存。
-
 #!/usr/bin/env python
 # coding=UTF-8
 import argparse
@@ -34,7 +30,6 @@ from core.utils import get_parameter_group
 # from core.losses import DarcyLoss
 
 
-# [中文注释] 实现 legalize_perm；结合调用处确认参数和执行流程。
 def legalize_perm(model, permutation_params):
     """Stochastic permutation legalization (SPL)
 
@@ -77,7 +72,6 @@ def legalize_perm(model, permutation_params):
         lg.info("Not all permutations are legal!")
 
 
-# [中文注释] 执行训练流程；重点检查损失、反向传播和优化器更新。
 def train(
     model: nn.Module,
     train_loader: DataLoader,
@@ -178,7 +172,6 @@ def train(
     )
 
 
-# [中文注释] 实现 validate；结合调用处确认参数和执行流程。
 def validate(
     model: nn.Module,
     validation_loader: DataLoader,
@@ -211,7 +204,6 @@ def validate(
     mlflow.log_metrics({"val_loss": mse_meter.avg}, step=epoch)
 
 
-# [中文注释] 执行模型评估；核对数据划分和评价指标。
 def test(
     model: nn.Module,
     test_loader: DataLoader,
@@ -247,7 +239,6 @@ def test(
     mlflow.log_metrics({"test_loss": mse_meter.avg}, step=epoch)
 
 
-# [中文注释] 主入口：组织配置读取、数据/模型构建和训练执行。
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("config", metavar="FILE", help="config file")

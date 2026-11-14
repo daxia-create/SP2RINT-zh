@@ -1,6 +1,3 @@
-# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
-# 模块路径：core/datasets/mixup.py；关注数据来源、预处理、样本/标签格式、张量形状和数据划分。
-
 import numpy as np
 import torch
 import torchvision.transforms.functional as tf
@@ -8,7 +5,6 @@ import torchvision.transforms.functional as tf
 __all__ = ["Mixup", "MixupAll"]
 
 
-# [中文注释] 定义 Mixup 数据类/对象，封装数据集状态和读取接口。
 class Mixup:
     """Mixup/Cutmix that applies different params to each element or whole batch
 
@@ -24,7 +20,6 @@ class Mixup:
         num_classes (int): number of classes for target
     """
 
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         mixup_alpha=1.0,
@@ -54,7 +49,6 @@ class Mixup:
         )
         self.random_vflip_ratio = random_vflip_ratio
 
-    # [中文注释] 实现 _params_per_elem；结合调用处确认数据流及预处理含义。
     def _params_per_elem(self, batch_size):
         lam = np.ones(batch_size, dtype=np.float32)
         use_cutmix = np.zeros(batch_size, dtype=np.bool)
@@ -93,7 +87,6 @@ class Mixup:
 
         return lam, phase, use_cutmix
 
-    # [中文注释] 实现 _params_per_batch；结合调用处确认数据流及预处理含义。
     def _params_per_batch(self):
         lam = 0.0
         use_cutmix = False
@@ -118,7 +111,6 @@ class Mixup:
             ).item()
         return lam, phase, use_cutmix
 
-    # [中文注释] 实现 _mix_elem；结合调用处确认数据流及预处理含义。
     def _mix_elem(self, x):
         batch_size = len(x)
         lam_batch, phase_batch, use_cutmix = self._params_per_elem(
@@ -143,7 +135,6 @@ class Mixup:
         x.copy_(x * lam_batch + (1 - lam_batch) * phase_batch * x_orig)
         return lam_batch, phase_batch, indices  # [bs, mode, 1, 1, 1], [batch*mode]
 
-    # [中文注释] 实现 _mix_batch；结合调用处确认数据流及预处理含义。
     def _mix_batch(self, x):
         lam, phase, use_cutmix = self._params_per_batch()
         if lam == 1.0 + 0j:
@@ -161,7 +152,6 @@ class Mixup:
         x.mul_(lam).add_(x_orig.mul_((1.0 - lam) * phase))
         return lam, phase, indices
 
-    # [中文注释] 实现 random_vflip；结合调用处确认数据流及预处理含义。
     def random_vflip(self, x, target):
         for i in range(x.shape[0]):
             for j in range(x.shape[1]):
@@ -169,7 +159,6 @@ class Mixup:
                     x.data[i, j].copy_(tf.vflip(x[i, j]))
                     target.data[i, j].copy_(tf.vflip(target[i, j]))
 
-    # [中文注释] 实现 __call__；结合调用处确认数据流及预处理含义。
     def __call__(self, x, target):
         # assert len(x) % 2 == 0, "Batch size should be even when using this"
         mode = x.data[:, :, 1:]  # inplace modified
@@ -184,14 +173,12 @@ class Mixup:
         return x, target
 
 
-# [中文注释] 实现 mixup_target；结合调用处确认数据流及预处理含义。
 def mixup_target(target, lam, phase, indices):
     return target * lam + target.flatten(0, 1)[indices].contiguous().view_as(
         target
     ).mul((1 - lam) * phase)
 
 
-# [中文注释] 定义 MixupAll 数据类/对象，封装数据集状态和读取接口。
 class MixupAll:
     """Mixup/Cutmix that applies different params to each element or whole batch
 
@@ -207,7 +194,6 @@ class MixupAll:
         num_classes (int): number of classes for target
     """
 
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         mixup_alpha=1.0,
@@ -237,7 +223,6 @@ class MixupAll:
         )
         self.random_vflip_ratio = random_vflip_ratio
 
-    # [中文注释] 实现 _params_per_elem；结合调用处确认数据流及预处理含义。
     def _params_per_elem(self, batch_size, n_ports, device, random_state=None):
         if random_state is not None:
             old_seed = np.random.get_state()
@@ -262,7 +247,6 @@ class MixupAll:
 
         return torch.from_numpy(lam).to(device)
 
-    # [中文注释] 实现 _params_per_batch；结合调用处确认数据流及预处理含义。
     def _params_per_batch(self):
         lam = 0.0
         use_cutmix = False
@@ -287,7 +271,6 @@ class MixupAll:
             ).item()
         return lam, phase, use_cutmix
 
-    # [中文注释] 实现 _mix_elem；结合调用处确认数据流及预处理含义。
     def _mix_elem(self, x, random_state=None):
         batch_size = len(x)
         lam_batch = self._params_per_elem(
@@ -297,7 +280,6 @@ class MixupAll:
         x.copy_(torch.einsum("bnihw,bnm->bmihw", x, lam_batch))
         return lam_batch
 
-    # [中文注释] 实现 random_vflip；结合调用处确认数据流及预处理含义。
     def random_vflip(self, x, target, random_state):
         if random_state is not None:
             old_seed = np.random.get_state()
@@ -310,7 +292,6 @@ class MixupAll:
         if random_state is not None:
             np.random.set_state(old_seed)
 
-    # [中文注释] 实现 __call__；结合调用处确认数据流及预处理含义。
     def __call__(self, x, target, random_state=None, vflip=True, mode_dim=1):
         # assert len(x) % 2 == 0, "Batch size should be even when using this"
         mode = x.data[:, :, mode_dim : mode_dim + 1]  # inplace modified
@@ -330,6 +311,5 @@ class MixupAll:
         return x, target
 
 
-# [中文注释] 实现 mixup_target_all；结合调用处确认数据流及预处理含义。
 def mixup_target_all(target, lam):
     return torch.einsum("bnihw,bnm->bmihw", target, lam)

@@ -1,7 +1,3 @@
-# 中文学习注释：实验/单元测试辅助脚本；仅增加说明，不修改原始执行逻辑。
-# 脚本用途：unitest/smooth_tradeoff.py。运行前核对数据路径、配置、设备及输出目录。
-# 重点检查：实验变量、扫描范围、评价指标、绘图坐标/单位和结果保存位置。
-
 '''
 this script is to sweep the following parameters:
 1. window size for equivalent convolution kernel 
@@ -43,9 +39,7 @@ import csv
 import numpy
 import h5py
 
-# [中文注释] 实现 MetaSurface；结合脚本目的确认输入、输出和评价量。
 class MetaSurface(nn.Module):
-    # [中文注释] 实现 __init__；结合脚本目的确认输入、输出和评价量。
     def __init__(
             self, 
             num_atom, 
@@ -75,7 +69,6 @@ class MetaSurface(nn.Module):
         else:
             self.normalizer_list = normalizer_list
 
-    # [中文注释] 实现 build_total_sim；结合脚本目的确认输入、输出和评价量。
     def build_total_sim(self):
         total_sim_cfg = DefaultSimulationConfig()
         total_sim_cfg.update(
@@ -117,13 +110,11 @@ class MetaSurface(nn.Module):
         )
         self.opt = total_opt
 
-    # [中文注释] 实现 build_parameter；结合脚本目的确认输入、输出和评价量。
     def build_parameter(self):
         self.weights = nn.Parameter(
             0.05 * torch.ones((self.num_atom), device=self.device)
         )
     
-    # [中文注释] 实现 build_ls_knots；结合脚本目的确认输入、输出和评价量。
     def build_ls_knots(self, custom_ls_knots=None):
         ls_knots = -0.05 * torch.ones((2 * self.num_atom + 1), device=self.device)
         if custom_ls_knots is not None:
@@ -137,7 +128,6 @@ class MetaSurface(nn.Module):
 
         return ls_knots
     
-    # [中文注释] 实现 calculate_normalizer；结合脚本目的确认输入、输出和评价量。
     def calculate_normalizer(self):
         sim_key = list(self.opt.objective.sims.keys())
         assert len(sim_key) == 1, f"there should be only one sim key, but we got {sim_key}"
@@ -176,7 +166,6 @@ class MetaSurface(nn.Module):
             self.opt.objective.sims[sim_key[0]].solver.set_cache_mode(False)
         return total_normalizer_list
 
-    # [中文注释] 实现 forward；结合脚本目的确认输入、输出和评价量。
     def forward(
             self, 
             sharpness, 
@@ -236,7 +225,6 @@ class MetaSurface(nn.Module):
             self.opt.objective.sims[sim_key[0]].solver.set_cache_mode(False)
         return full_wave_response
 
-# [中文注释] 实现 matching_T；结合脚本目的确认输入、输出和评价量。
 def matching_T(
     num_metasurfaces=2,
     num_atom=32,

@@ -1,9 +1,3 @@
-# -----------------------------------------------------------------------------
-# 中文学习注释：仅增加说明，不修改原始算法、变量、默认参数或执行流程。
-# 文件职责：SP²RINT 工具模块：传输矩阵匹配损失、响应损失、优化器/调度器和训练辅助功能。
-# 阅读建议：结合调用处检查输入/输出形状、复数数据类型、单位、边界条件及梯度流。
-# -----------------------------------------------------------------------------
-
 import torch
 from torch import nn
 from torch.nn.modules.batchnorm import _BatchNorm
@@ -19,9 +13,7 @@ from ceviche.constants import *
 import copy
 import matplotlib.pyplot as plt
 import h5py
-# [中文注释] 定义 DeterministicCtx 类，封装相关状态、参数和计算方法。
 class DeterministicCtx:
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(self, seed: int | None = None) -> None:
         self.seed = seed
         self.random_state = None
@@ -29,7 +21,6 @@ class DeterministicCtx:
         self.torch_random_state = None
         self.torch_cuda_random_state = None
 
-    # [中文注释] 实现 __enter__ 功能；请结合调用处确认输入、输出和状态变化。
     def __enter__(self):
         # Save the current states
         self.random_state = random.getstate()
@@ -42,7 +33,6 @@ class DeterministicCtx:
         set_torch_deterministic(self.seed)
         return self
 
-    # [中文注释] 实现 __exit__ 功能；请结合调用处确认输入、输出和状态变化。
     def __exit__(self, exc_type, exc_val, exc_tb):
         # Restore the saved states
         random.setstate(self.random_state)
@@ -52,7 +42,6 @@ class DeterministicCtx:
             torch.cuda.set_rng_state(self.torch_cuda_random_state)
 
 
-# [中文注释] 设置或更新 torch_deterministic 相关状态；注意是否影响缓存、优化变量或响应矩阵。
 def set_torch_deterministic(seed: int = 0) -> None:
     seed = int(seed) % (2**32)
     torch.manual_seed(seed)
@@ -63,19 +52,16 @@ def set_torch_deterministic(seed: int = 0) -> None:
         torch.backends.cudnn.benchmark = False
         torch.cuda.manual_seed_all(seed)
 
-# [中文注释] 实现 hidden_register_hook 功能；请结合调用处确认输入、输出和状态变化。
 def hidden_register_hook(m, input, output):
     m._recorded_hidden = output
 
 
-# [中文注释] 实现 register_hidden_hooks 功能；请结合调用处确认输入、输出和状态变化。
 def register_hidden_hooks(model):
     for name, m in model.named_modules():
         if isinstance(m, (nn.ReLU, nn.GELU, nn.Hardswish, nn.ReLU6)):
             m.register_forward_hook(hidden_register_hook)
 
 
-# [中文注释] 读取并返回 parameter_group 相关状态；核对返回值形状、单位和数据类型。
 def get_parameter_group(model, weight_decay=0.0):
     """set weigh_decay to Normalization layers to 0"""
     all_parameters = set(model.parameters())
@@ -118,14 +104,11 @@ def get_parameter_group(model, weight_decay=0.0):
             {"params": list(group_decay), "weight_decay": weight_decay},
         ], [{"params": list(special_params), "weight_decay": 0.0}]
     
-# [中文注释] 定义 EnergyConservationLoss 类，封装相关状态、参数和计算方法。
 class EnergyConservationLoss(nn.Module):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(self, loss_coeff=1.0):
         super(EnergyConservationLoss, self).__init__()
         self.loss_coeff = loss_coeff
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, transfer_matrix):
         # this should be a unitary matrix
         assert transfer_matrix.shape[0] == transfer_matrix.shape[1]
@@ -154,13 +137,10 @@ class EnergyConservationLoss(nn.Module):
 
 #         return loss
     
-# [中文注释] 定义 NL2norm 类，封装相关状态、参数和计算方法。
 class NL2norm(nn.Module):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(self):
         super(NL2norm, self).__init__()
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, pred, target):
         error = pred - target
         error_energy = torch.norm(error, 2, dim=(-1, -2))
@@ -168,13 +148,10 @@ class NL2norm(nn.Module):
         return (error_energy / target_energy).mean()
 
     
-# [中文注释] 定义 TransferMatrixMatchingLoss 类，封装相关状态、参数和计算方法。
 class TransferMatrixMatchingLoss(nn.Module):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(self):
         super(TransferMatrixMatchingLoss, self).__init__()
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, total_response, target_response, target_phase_variants, seperate_loss=True):
         """
         Computes the MSE loss between total_phase and the closest value
@@ -249,9 +226,7 @@ class TransferMatrixMatchingLoss(nn.Module):
             return mag_normalized_L2 + phase_normalized_L2, round(mag_normalized_L2.item(), 3), round(phase_normalized_L2.item(), 3)
 
 
-# [中文注释] 定义 ResponseMatchingLoss 类，封装相关状态、参数和计算方法。
 class ResponseMatchingLoss(nn.Module):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(
             self, 
             probe_source_mode,
@@ -270,7 +245,6 @@ class ResponseMatchingLoss(nn.Module):
             self.x1_freq_weight = torch.tensor(f["first_layer"], device="cuda").sqrt()
             self.x2_freq_weight = torch.tensor(f["second_layer"], device="cuda").sqrt()
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, target, transfer_matrix, layer_number = 0):
 
         # interpolate the column of the transfer matrix to 480
@@ -372,13 +346,10 @@ class ResponseMatchingLoss(nn.Module):
         loss = torch.norm(response_transfer - response_target, 2) / torch.norm(response_target, 2)
         return loss
     
-# [中文注释] 定义 CosSimLoss 类，封装相关状态、参数和计算方法。
 class CosSimLoss(torch.nn.Module):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(self):
         super().__init__()
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, target, prediction):
         target_vec = target.flatten()
         pred_vec = prediction.flatten()
@@ -395,14 +366,11 @@ class CosSimLoss(torch.nn.Module):
 
         return cos_sim
     
-# [中文注释] 定义 HighFreqPenalty 类，封装相关状态、参数和计算方法。
 class HighFreqPenalty(torch.nn.Module):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(self, mode_threshold) -> None:
         super().__init__()
         self.mode_threshold = mode_threshold
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, inner_field):
         inner_field = inner_field.flatten(0, 1)
         spectrum = torch.fft.fft(inner_field, dim=-1)
@@ -414,14 +382,11 @@ class HighFreqPenalty(torch.nn.Module):
 
         return high_freq_percentage
 
-# [中文注释] 定义 AdmmConsistencyLoss 类，封装相关状态、参数和计算方法。
 class AdmmConsistencyLoss(nn.Module):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(self, rho: float = 1.0):
         super(AdmmConsistencyLoss, self).__init__()
         self.rho = rho
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(
         self, 
         x: torch.Tensor,               # shape: [N, H, W]
@@ -448,9 +413,7 @@ class AdmmConsistencyLoss(nn.Module):
         return self.rho / 2.0 * loss
 
 
-# [中文注释] 定义 TransferMatrixSmoothError 类，封装相关状态、参数和计算方法。
 class TransferMatrixSmoothError(nn.Module):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(self, mode: str = "xy"):
         """
         mode can be one of the following:
@@ -461,7 +424,6 @@ class TransferMatrixSmoothError(nn.Module):
         super(TransferMatrixSmoothError, self).__init__()
         self.mode = mode
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, transfer_matrix: torch.Tensor) -> torch.Tensor:
         """
         # the transfer matrix is of shape bs, H, W
@@ -476,7 +438,6 @@ class TransferMatrixSmoothError(nn.Module):
         d_diag = transfer_matrix[..., 1:, 1:] - transfer_matrix[..., :-1, :-1]  # shape (bs, H-1, W-1)
 
         # 2) small function to calculate the amplitude square
-        # [中文注释] 实现 amp_sqr 功能；请结合调用处确认输入、输出和状态变化。
         def amp_sqr(z: torch.Tensor) -> torch.Tensor:
             return z.real**2 + z.imag**2
 
@@ -496,10 +457,8 @@ class TransferMatrixSmoothError(nn.Module):
             raise ValueError(f"Invalid mode: {self.mode}")
     
     
-# [中文注释] 定义 DownsampleRateScheduler 类，封装相关状态、参数和计算方法。
 class DownsampleRateScheduler(object):
     __mode_list__ = {"cosine", "quadratic", "milestone", "constant"}
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(
             self, 
             total_steps: int, 
@@ -520,7 +479,6 @@ class DownsampleRateScheduler(object):
         self.current_ds = init_ds_rate
         self.mode = mode
         assert mode in self.__mode_list__, f"mode should be one of {self.__mode_list__}, but got {mode}"
-    # [中文注释] 实现 _step_cosine 功能；请结合调用处确认输入、输出和状态变化。
     def _step_cosine(self):
         self.current_step += 1
         if self.current_step > self.total_steps:
@@ -534,7 +492,6 @@ class DownsampleRateScheduler(object):
         self.current_ds = min(self.available_ds_rate, key=lambda x: abs(x - self.current_ds))
         return self.current_ds
     
-    # [中文注释] 实现 _step_milestone 功能；请结合调用处确认输入、输出和状态变化。
     def _step_milestone(self):
         self.current_step += 1
         if self.current_step == 1:
@@ -548,12 +505,10 @@ class DownsampleRateScheduler(object):
             self.current_ds = self.available_ds_rate[-1]
             return self.current_ds
         
-    # [中文注释] 实现 _step_constant 功能；请结合调用处确认输入、输出和状态变化。
     def _step_constant(self):
         self.current_ds = self.init_ds_rate
         return self.current_ds
     
-    # [中文注释] 实现 _step_quadratic 功能；请结合调用处确认输入、输出和状态变化。
     def _step_quadratic(self):
         raise NotImplementedError("Quadratic mode is not implemented yet")
         self.current_step += 1
@@ -564,7 +519,6 @@ class DownsampleRateScheduler(object):
         )
         return self.current_sharp
     
-    # [中文注释] 实现 step 功能；请结合调用处确认输入、输出和状态变化。
     def step(self):
         if self.mode == "cosine":
             return self._step_cosine()
@@ -577,13 +531,10 @@ class DownsampleRateScheduler(object):
         else:
             raise ValueError(f"mode should be one of {self.__mode_list__}, but got {self.mode}")
 
-    # [中文注释] 读取并返回 downsample_rate 相关状态；核对返回值形状、单位和数据类型。
     def get_downsample_rate(self):
         return self.current_ds
     
-# [中文注释] 定义 End2EndSharpnessScheduler 类，封装相关状态、参数和计算方法。
 class End2EndSharpnessScheduler(object):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(
             self,
             mode,
@@ -599,7 +550,6 @@ class End2EndSharpnessScheduler(object):
         self.current_sharpness = init_sharpness
         self.current_step = 0
 
-    # [中文注释] 实现 step 功能；请结合调用处确认输入、输出和状态变化。
     def step(self):
         """Take a scheduler step and return current sharpness value"""
         self.current_step += 1
@@ -612,15 +562,12 @@ class End2EndSharpnessScheduler(object):
         
         return self.current_sharpness
 
-    # [中文注释] 读取并返回 sharpness 相关状态；核对返回值形状、单位和数据类型。
     def get_sharpness(self):
         """Get current sharpness value"""
         return self.current_sharpness
 
     
-# [中文注释] 定义 InvDesSharpnessScheduler 类，封装相关状态、参数和计算方法。
 class InvDesSharpnessScheduler(object):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(
             self, 
             mode,
@@ -643,7 +590,6 @@ class InvDesSharpnessScheduler(object):
 
         self.build_sharpness_schedule()
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_sharpness_schedule(self):
         if self.mode == "per_proj":
             self.sharpness_schedule = None # there is no schedule for per_proj
@@ -670,7 +616,6 @@ class InvDesSharpnessScheduler(object):
             )
         
 
-    # [中文注释] 实现 step 功能；请结合调用处确认输入、输出和状态变化。
     def step(self):
         if self.mode == "per_proj":
             return self._step_per_proj()
@@ -681,7 +626,6 @@ class InvDesSharpnessScheduler(object):
         elif self.mode == "mixed":
             return self._step_mixed()
         
-    # [中文注释] 实现 _step_per_proj 功能；请结合调用处确认输入、输出和状态变化。
     def _step_per_proj(self):
         self.current_sharpness = (
             self.init_sharpness,
@@ -689,7 +633,6 @@ class InvDesSharpnessScheduler(object):
         )
         return self.current_sharpness
     
-    # [中文注释] 实现 _step_per_epoch 功能；请结合调用处确认输入、输出和状态变化。
     def _step_per_epoch(self):
         self.current_sharpness = (
             self.init_sharpness,
@@ -697,7 +640,6 @@ class InvDesSharpnessScheduler(object):
         )
         return self.current_sharpness
     
-    # [中文注释] 实现 _step_per_training 功能；请结合调用处确认输入、输出和状态变化。
     def _step_per_training(self):
         self.current_sharpness = (
             self.sharpness_schedule[self.current_step],
@@ -706,7 +648,6 @@ class InvDesSharpnessScheduler(object):
         self.current_step += 1
         return self.current_sharpness
 
-    # [中文注释] 实现 _step_mixed 功能；请结合调用处确认输入、输出和状态变化。
     def _step_mixed(self):
         if self.current_step < self.sharpness_peak_epoch:
             self.current_sharpness = (
@@ -721,12 +662,10 @@ class InvDesSharpnessScheduler(object):
         self.current_step += 1
         return self.current_sharpness
 
-    # [中文注释] 读取并返回 current_sharpness 相关状态；核对返回值形状、单位和数据类型。
     def get_current_sharpness(self):
         return self.current_sharpness
 
     
-# [中文注释] 执行电磁响应探测；重点检查激励、监测位置、采样和复场归一化。
 def probe_near2far_matrix(
         total_opt, 
         wl, # in um
@@ -803,7 +742,6 @@ def probe_near2far_matrix(
     # quit()
     return farfield_response
 
-# [中文注释] 实现 draw_diffraction_region 功能；请结合调用处确认输入、输出和状态变化。
 def draw_diffraction_region(
         total_opt, 
         wl, # in um
@@ -874,11 +812,9 @@ def draw_diffraction_region(
     # print(farfield_response.shape, flush=True)
     # return farfield_response
 
-# [中文注释] 读取并返回 mid_weight 相关状态；核对返回值形状、单位和数据类型。
 def get_mid_weight(l, w, period=0.3):
     return (w*l)/(period-w)
 
-# [中文注释] 读取并返回 terminal_weight 相关状态；核对返回值形状、单位和数据类型。
 def get_terminal_weight(l, height, max_height = 0.75):
     return l * (height - max_height) / (height)
 
@@ -889,7 +825,6 @@ def get_terminal_weight(l, height, max_height = 0.75):
 #     )
 #     return optimizer, scheduler
 
-# [中文注释] 实现 reset_optimizer_and_scheduler 功能；请结合调用处确认输入、输出和状态变化。
 def reset_optimizer_and_scheduler(model, lr_init, lr_final, num_epoch):
     if isinstance(model, nn.Module):
         params = model.parameters()
@@ -904,7 +839,6 @@ def reset_optimizer_and_scheduler(model, lr_init, lr_final, num_epoch):
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epoch, eta_min=lr_final)
     return optimizer, scheduler
 
-# [中文注释] 实现 insert_zeros_after_every_N_except_last 功能；请结合调用处确认输入、输出和状态变化。
 def insert_zeros_after_every_N_except_last(x: torch.Tensor, N: int, M: int):
     """
     Insert M zeros (or Falses) after every N elements along the last dimension,

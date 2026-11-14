@@ -4,12 +4,6 @@ LastEditors: Jiaqi Gu && jiaqigu@asu.edu
 LastEditTime: 2025-01-06 19:01:06
 FilePath: /MAPS/core/fdfd/near2far.py
 """
-# -----------------------------------------------------------------------------
-# 中文学习注释：仅增加说明，不修改原始算法、变量、默认参数或执行流程。
-# 文件职责：近场到远场变换工具：处理仿真近场数据并计算远场响应。
-# 阅读建议：结合调用处检查输入/输出形状、复数数据类型、单位、边界条件及梯度流。
-# -----------------------------------------------------------------------------
-
 
 from typing import Tuple
 
@@ -23,7 +17,6 @@ from scipy.special import jn, yn
 from ceviche.constants import C_0, EPSILON_0, MU_0
 
 @torch.compile
-# [中文注释] 实现 car_2_sph 功能；请结合调用处确认输入、输出和状态变化。
 def car_2_sph(x: float, y: float, z: float = None) -> Tuple[float, float, float]:
     """Convert Cartesian to spherical coordinates.
 
@@ -50,7 +43,6 @@ def car_2_sph(x: float, y: float, z: float = None) -> Tuple[float, float, float]
     phi = torch.arctan2(y, x)
     return r, phi, theta
 
-# [中文注释] 实现 sph_2_car_field 功能；请结合调用处确认输入、输出和状态变化。
 def sph_2_car_field(
     f_r: Tensor,
     f_phi: Tensor,
@@ -103,7 +95,6 @@ def sph_2_car_field(
 
 @torch.compile
 # @torch.compile(options={"triton.cudagraphs": True}, fullgraph=True)
-# [中文注释] 实现 trapezoid_1d 功能；请结合调用处确认输入、输出和状态变化。
 def trapezoid_1d(integrand: Tensor, dx: float, dim: int = -1) -> Tensor:
     return torch.sum(integrand, dim=dim) * dx  # more efficient for uniform grid
     # slice1 = [slice(None)] * integrand.ndim
@@ -115,7 +106,6 @@ def trapezoid_1d(integrand: Tensor, dx: float, dim: int = -1) -> Tensor:
     # ) * (dx / 2)
 
 @torch.compile
-# [中文注释] 实现 hankel 功能；请结合调用处确认输入、输出和状态变化。
 def hankel(n: int, x: Tensor, kind=1):
     ## hankel function J + iY
     # dtype = x.dtype
@@ -136,7 +126,6 @@ def hankel(n: int, x: Tensor, kind=1):
     return res
 # https://digitalcommons.calpoly.edu/cgi/viewcontent.cgi?article=1264&context=phy_fac
 # full RS propagation equation
-# [中文注释] 实现 RayleighSommerfieldPropagation 功能；请结合调用处确认输入、输出和状态变化。
 def RayleighSommerfieldPropagation(
     x: Tensor,  # far field location, um (x,y)
     freqs: Tensor,  # freqs = 1/lambda
@@ -170,7 +159,6 @@ def RayleighSommerfieldPropagation(
     return farfield * 2
 
 
-# [中文注释] 读取并返回 farfields_Rayleigh_Sommerfeld 相关状态；核对返回值形状、单位和数据类型。
 def get_farfields_Rayleigh_Sommerfeld(
     nearfield_slice,  # list of nearfield monitor
     nearfield_slice_info,  # list of nearfield monitor
@@ -250,7 +238,6 @@ def get_farfields_Rayleigh_Sommerfeld(
     return far_fields
 
 
-# [中文注释] 读取并返回 farfields_GreenFunction 相关状态；核对返回值形状、单位和数据类型。
 def get_farfields_GreenFunction(
     nearfield_slices,  # list of nearfield monitor
     nearfield_slices_info,  # list of nearfield monitor
@@ -357,7 +344,6 @@ def get_farfields_GreenFunction(
 
 
 # @torch.compile
-# [中文注释] 实现 GreenFunctionProjection 功能；请结合调用处确认输入、输出和状态变化。
 def GreenFunctionProjection(
     x: Tensor,  # far field location, um (x,y)
     freqs: Tensor,  # freqs = 1/lambda
@@ -493,7 +479,6 @@ def GreenFunctionProjection(
 
         # operations between unit vectors and currents
         # @torch.compile
-        # [中文注释] 实现 r_x_current 功能；请结合调用处确认输入、输出和状态变化。
         def r_x_current(
             current: Tuple[Tensor, ...], is_2d: bool = True
         ) -> Tuple[Tensor, ...]:
@@ -512,7 +497,6 @@ def GreenFunctionProjection(
                 ]
 
         # @torch.compile
-        # [中文注释] 实现 r_dot_current 功能；请结合调用处确认输入、输出和状态变化。
         def r_dot_current(current: Tuple[Tensor, ...], is_2d: bool = True) -> Tensor:
             """Dot product between the r unit vector and the current."""
             if is_2d:
@@ -525,7 +509,6 @@ def GreenFunctionProjection(
                 )
 
         # @torch.compile
-        # [中文注释] 实现 r_dot_current_dtheta 功能；请结合调用处确认输入、输出和状态变化。
         def r_dot_current_dtheta(
             current: Tuple[Tensor, ...], is_2d: bool = True
         ) -> Tensor:
@@ -540,13 +523,11 @@ def GreenFunctionProjection(
                 )
 
         # @torch.compile
-        # [中文注释] 实现 r_dot_current_dphi_div_sin_theta 功能；请结合调用处确认输入、输出和状态变化。
         def r_dot_current_dphi_div_sin_theta(current: Tuple[Tensor, ...]) -> Tensor:
             """Phi derivative of the dot product between the r unit vector and the current,
             analytically divided by sin theta."""
             return -sin_phi * current[0] + cos_phi * current[1]
 
-        # [中文注释] 实现 grad_Gr_r_dot_current 功能；请结合调用处确认输入、输出和状态变化。
         def grad_Gr_r_dot_current(
             current: Tuple[Tensor, ...],
         ) -> Tuple[Tensor, ...]:
@@ -570,7 +551,6 @@ def GreenFunctionProjection(
                 cos_phi=cos_phi,
             )  # fx, fy, fz
 
-        # [中文注释] 实现 potential_terms 功能；请结合调用处确认输入、输出和状态变化。
         def potential_terms(current: Tuple[Tensor, ...], const: complex):
             """Assemble vector potential and its derivatives."""
             r_x_c = r_x_current(current)
@@ -647,7 +627,6 @@ def GreenFunctionProjection(
 
 
 # @torch.compile
-# [中文注释] 实现 _green_functions 功能；请结合调用处确认输入、输出和状态变化。
 def _green_functions(k, r_obs):
     kr = k * r_obs  # [n, s, nf]
     H0 = hankel(0, kr, kind=2)

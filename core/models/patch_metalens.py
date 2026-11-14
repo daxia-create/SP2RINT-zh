@@ -1,9 +1,3 @@
-# -----------------------------------------------------------------------------
-# 中文学习注释：仅增加说明，不修改原始算法、变量、默认参数或执行流程。
-# 文件职责：PatchMetalens：将一维超表面划分为局部重叠 Patch，调用 MAPS/Ceviche 电磁求解，并拼接复数传输矩阵。
-# 阅读建议：结合调用处检查输入/输出形状、复数数据类型、单位、边界条件及梯度流。
-# -----------------------------------------------------------------------------
-
 import torch
 from torch import nn
 import os
@@ -38,7 +32,6 @@ import h5py
 import copy
 from thirdparty.MAPS_old.core.invdes.optimizer.nesterov import NesterovAcceleratedGradientOptimizer
 
-# [中文注释] 实现 interpolate_1d 功能；请结合调用处确认输入、输出和状态变化。
 def interpolate_1d(input_tensor, x0, x1, method="linear"):
     """
     Perform 1D interpolation on a tensor.
@@ -65,7 +58,6 @@ def interpolate_1d(input_tensor, x0, x1, method="linear"):
     else:
         raise ValueError(f"Unsupported interpolation method: {method}")
 
-# [中文注释] 实现 find_closest_width 功能；请结合调用处确认输入、输出和状态变化。
 def find_closest_width(lut, target_phase):
     """
     Given a LUT (dictionary) where keys are widths and values are phase shifts,
@@ -81,9 +73,7 @@ def find_closest_width(lut, target_phase):
     closest_width = min(lut, key=lambda w: abs(lut[w] - target_phase))
     return closest_width
 
-# [中文注释] 定义 PatchMetalens 类，封装相关状态、参数和计算方法。
 class PatchMetalens(nn.Module):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(
         self,
         atom_period: float,
@@ -156,15 +146,12 @@ class PatchMetalens(nn.Module):
             self.opt = opts
             self.total_opt = total_opt
 
-    # [中文注释] 设置或更新 total_normalizer_list 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_total_normalizer_list(self, normalizer_list):
         self.total_normalizer_list = normalizer_list
 
-    # [中文注释] 设置或更新 LUT 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_LUT(self, LUT):
         self.LUT = LUT
 
-    # [中文注释] 设置或更新 target_phase_response 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_target_phase_response(self, target_phase_response):
         if target_phase_response.shape[-1] != self.num_atom or target_phase_response.shape[-2] != self.num_atom:
             assert target_phase_response.shape[-1] % self.num_atom == 0, "The last dimension of target_phase_response must be a multiple of num_atom"
@@ -179,7 +166,6 @@ class PatchMetalens(nn.Module):
 
         self.target_phase_response = target_phase_response
 
-    # [中文注释] 实现 rebuild_param 功能；请结合调用处确认输入、输出和状态变化。
     def rebuild_param(self):
         assert self.LUT is not None and self.target_phase_response is not None, "LUT and target_phase_response must be set before rebuilding parameters"
         if self.param_method == "level_set":
@@ -196,16 +182,13 @@ class PatchMetalens(nn.Module):
         else:
             raise ValueError(f"Unsupported param_method: {self.param_method}")
     
-    # [中文注释] 实现 direct_set_pillar_width 功能；请结合调用处确认输入、输出和状态变化。
     def direct_set_pillar_width(self, weights):
         assert len(weights) == self.num_atom, f"The length of weights must be equal to the number of atoms {len(weights)}!={self.num_atom}"
         self.weights.data = weights
 
-    # [中文注释] 读取并返回 pillar_width 相关状态；核对返回值形状、单位和数据类型。
     def get_pillar_width(self):
         return self.weights.data
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_param(self):
         if self.param_method == "level_set":
             self.weights = nn.Parameter(
@@ -228,7 +211,6 @@ class PatchMetalens(nn.Module):
         else:
             raise ValueError(f"Unsupported param_method: {self.param_method}")
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_patch(self):
         sim_cfg = DefaultSimulationConfig()
         total_sim_cfg = DefaultSimulationConfig()
@@ -358,7 +340,6 @@ class PatchMetalens(nn.Module):
             design_region_param_cfgs=self.design_region_param_cfgs,
         )
 
-    # [中文注释] 实现 enable_solver_cache 功能；请结合调用处确认输入、输出和状态变化。
     def enable_solver_cache(self):
         sim_key = list(self.total_opt.objective.sims.keys())
         assert len(sim_key) == 1, f"there should be only one sim key, but we got {sim_key}"
@@ -367,7 +348,6 @@ class PatchMetalens(nn.Module):
                 opt.objective.sims[sim_key[0]].solver.clear_solver_cache()
                 opt.objective.sims[sim_key[0]].solver.set_cache_mode(True)
 
-    # [中文注释] 实现 disable_solver_cache 功能；请结合调用处确认输入、输出和状态变化。
     def disable_solver_cache(self):
         sim_key = list(self.total_opt.objective.sims.keys())
         assert len(sim_key) == 1, f"there should be only one sim key, but we got {sim_key}"
@@ -376,7 +356,6 @@ class PatchMetalens(nn.Module):
                 opt.objective.sims[sim_key[0]].solver.clear_solver_cache()
                 opt.objective.sims[sim_key[0]].solver.set_cache_mode(False)
 
-    # [中文注释] 设置或更新 ref_response 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_ref_response(
             self, 
             ref_mag: torch.Tensor, 
@@ -385,7 +364,6 @@ class PatchMetalens(nn.Module):
         self.ref_phase = ref_phase
         self.ref_mag = ref_mag
 
-    # [中文注释] 读取并返回 design_variables 相关状态；核对返回值形状、单位和数据类型。
     def get_design_variables(self, weight):
         if self.design_var_type == "width":
             num_atom = len(weight)
@@ -409,7 +387,6 @@ class PatchMetalens(nn.Module):
         
         return custom_source
     
-    # [中文注释] 读取并返回 empty_design_variables 相关状态；核对返回值形状、单位和数据类型。
     def get_empty_design_variables(self, weight: dict = {}):
         if self.design_var_type == "width":
             custom_source = {
@@ -427,7 +404,6 @@ class PatchMetalens(nn.Module):
         return custom_source
 
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, sharpness, in_down_sample_rate=15, out_down_sample_rate=None):
         if out_down_sample_rate is None:
             out_down_sample_rate = in_down_sample_rate

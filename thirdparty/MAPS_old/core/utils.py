@@ -1,3 +1,7 @@
+# 中文学习注释：MAPS/Ceviche 第三方核心依赖阅读辅助。未改变上游算法、参数或执行逻辑。
+# 模块定位：thirdparty/MAPS_old/core/utils.py。重点追踪 Maxwell 离散、线性系统、边界/源项、伴随导数及结构参数化。
+# 注意：这里的注释是学习说明，不代表上游项目作者原始注释。
+
 import collections
 import logging
 import math
@@ -38,6 +42,7 @@ else:
 
 
 @lru_cache(maxsize=8)
+# [中文注释] 实现 _gaussian；结合调用处核对物理量、网格维度、边界条件和单位。
 def _gaussian(grid_step, size, width, device="cuda"):
     x_mesh = torch.linspace(
         -size * grid_step / 2, size * grid_step / 2, size, device=device
@@ -46,6 +51,7 @@ def _gaussian(grid_step, size, width, device="cuda"):
     return torch.exp((x_mesh**2) / (-2 * width**2))
 
 
+# [中文注释] 实现 gaussian；结合调用处核对物理量、网格维度、边界条件和单位。
 def gaussian(device="cuda", **kwargs):
     """Generate a gaussian shape.
 
@@ -76,6 +82,7 @@ shape_dict = {
 
 @torch.compile
 # @torch.compile(options={"triton.cudagraphs": True}, fullgraph=True)
+# [中文注释] 实现 trapezoid_1d；结合调用处核对物理量、网格维度、边界条件和单位。
 def trapezoid_1d(integrand: Tensor, dx: float, dim: int = -1) -> Tensor:
     return torch.sum(integrand, dim=dim) * dx  # more efficient for uniform grid
     # slice1 = [slice(None)] * integrand.ndim
@@ -87,6 +94,7 @@ def trapezoid_1d(integrand: Tensor, dx: float, dim: int = -1) -> Tensor:
     # ) * (dx / 2)
 
 
+# [中文注释] 实现 sph_2_car_field；结合调用处核对物理量、网格维度、边界条件和单位。
 def sph_2_car_field(
     f_r: Tensor,
     f_phi: Tensor,
@@ -139,6 +147,7 @@ def sph_2_car_field(
 
 
 @torch.compile
+# [中文注释] 实现 car_2_sph；结合调用处核对物理量、网格维度、边界条件和单位。
 def car_2_sph(x: float, y: float, z: float = None) -> Tuple[float, float, float]:
     """Convert Cartesian to spherical coordinates.
 
@@ -167,6 +176,7 @@ def car_2_sph(x: float, y: float, z: float = None) -> Tuple[float, float, float]
 
 
 @torch.compile
+# [中文注释] 实现 sph_2_car；结合调用处核对物理量、网格维度、边界条件和单位。
 def sph_2_car(r: float, phi: float, theta: float = None) -> Tuple[float, float, float]:
     """Convert spherical to Cartesian coordinates.
 
@@ -196,6 +206,7 @@ def sph_2_car(r: float, phi: float, theta: float = None) -> Tuple[float, float, 
     return x, y, z
 
 
+# [中文注释] 实现 overlap；结合调用处核对物理量、网格维度、边界条件和单位。
 def overlap(
     a,
     b,
@@ -231,6 +242,7 @@ def overlap(
     return sum(cross(ac, b, direction=direction)) * dl
 
 
+# [中文注释] 实现 cross；结合调用处核对物理量、网格维度、边界条件和单位。
 def cross(a, b, direction="x"):
     """Compute the cross product between two VectorFields."""
     if direction[0] == "x":
@@ -243,6 +255,7 @@ def cross(a, b, direction="x"):
         raise ValueError("Invalid direction")
 
 
+# [中文注释] 实现 get_eigenmode_coefficients；结合调用处核对物理量、网格维度、边界条件和单位。
 def get_eigenmode_coefficients(
     hx,
     hy,
@@ -320,6 +333,7 @@ def get_eigenmode_coefficients(
     return s_p, s_m
 
 
+# [中文注释] 实现 cal_fom_from_fields；结合调用处核对物理量、网格维度、边界条件和单位。
 def cal_fom_from_fields(
     Ez,
     Hx,
@@ -360,6 +374,7 @@ def cal_fom_from_fields(
 
 
 @lru_cache(maxsize=1024)
+# [中文注释] 实现 _load_opt_cfgs；结合调用处核对物理量、网格维度、边界条件和单位。
 def _load_opt_cfgs(opt_cfg_file_path):
     with open(opt_cfg_file_path, "r") as opt_cfg_file:
         opt_cfgs = ryaml.load(opt_cfg_file)
@@ -369,6 +384,7 @@ def _load_opt_cfgs(opt_cfg_file_path):
         del opt_cfgs["_fusion_func"]
     return opt_cfgs, resolution
 
+# [中文注释] 实现 cal_fom_from_fwd_field；结合调用处核对物理量、网格维度、边界条件和单位。
 def cal_fom_from_fwd_field(
     Ez4adj,
     Ez4fullfield,
@@ -478,6 +494,7 @@ def cal_fom_from_fwd_field(
     return torch.stack(total_fom_list, dim=0)
 
 
+# [中文注释] 实现 cal_total_field_adj_src_from_fwd_field；结合调用处核对物理量、网格维度、边界条件和单位。
 def cal_total_field_adj_src_from_fwd_field(
     Ez4adj,
     Ez4fullfield,
@@ -624,6 +641,7 @@ def cal_total_field_adj_src_from_fwd_field(
         return total_field, adj_src, monitor_slice_list
 
 
+# [中文注释] 实现 plot_fourier_eps；结合调用处核对物理量、网格维度、边界条件和单位。
 def plot_fourier_eps(
     eps_map: torch.Tensor,
     filepath: str,
@@ -644,6 +662,7 @@ def plot_fourier_eps(
     plt.close()
 
 
+# [中文注释] 实现 plot_fouier_transform；结合调用处核对物理量、网格维度、边界条件和单位。
 def plot_fouier_transform(
     field: torch.Tensor,
     filepath: str,
@@ -667,6 +686,7 @@ def plot_fouier_transform(
     plt.close()
 
 
+# [中文注释] 实现 plot_fields；结合调用处核对物理量、网格维度、边界条件和单位。
 def plot_fields(
     fields: Tensor,
     ground_truth: Tensor,
@@ -725,6 +745,7 @@ def plot_fields(
     plt.close()
 
 
+# [中文注释] 实现 resize_to_targt_size；结合调用处核对物理量、网格维度、边界条件和单位。
 def resize_to_targt_size(image: Tensor, size: Tuple[int, int]) -> Tensor:
     if len(image.shape) == 2:
         image = image.unsqueeze(0).unsqueeze(0)
@@ -735,6 +756,7 @@ def resize_to_targt_size(image: Tensor, size: Tuple[int, int]) -> Tensor:
     ).squeeze()
 
 
+# [中文注释] 定义 DAdaptAdam 类，封装电磁求解/优化相关状态。
 class DAdaptAdam(torch.optim.Optimizer):
     r"""
     Implements Adam with D-Adaptation automatic step-sizes.
@@ -774,6 +796,7 @@ class DAdaptAdam(torch.optim.Optimizer):
             than PyTorch's builtin version, the auto-detection won't work.
     """
 
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         params,
@@ -821,13 +844,16 @@ class DAdaptAdam(torch.optim.Optimizer):
         super().__init__(params, defaults)
 
     @property
+    # [中文注释] 实现 supports_memory_efficient_fp16；结合调用处核对物理量、网格维度、边界条件和单位。
     def supports_memory_efficient_fp16(self):
         return False
 
     @property
+    # [中文注释] 实现 supports_flat_params；结合调用处核对物理量、网格维度、边界条件和单位。
     def supports_flat_params(self):
         return True
 
+    # [中文注释] 实现 step；结合调用处核对物理量、网格维度、边界条件和单位。
     def step(self, closure=None):
         """Performs a single optimization step.
 
@@ -987,7 +1013,9 @@ class DAdaptAdam(torch.optim.Optimizer):
         return loss
 
 
+# [中文注释] 定义 DeterministicCtx 类，封装电磁求解/优化相关状态。
 class DeterministicCtx:
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, seed: int | None = None) -> None:
         self.seed = seed
         self.random_state = None
@@ -995,6 +1023,7 @@ class DeterministicCtx:
         self.torch_random_state = None
         self.torch_cuda_random_state = None
 
+    # [中文注释] 实现 __enter__；结合调用处核对物理量、网格维度、边界条件和单位。
     def __enter__(self):
         # Save the current states
         self.random_state = random.getstate()
@@ -1007,6 +1036,7 @@ class DeterministicCtx:
         set_torch_deterministic(self.seed)
         return self
 
+    # [中文注释] 实现 __exit__；结合调用处核对物理量、网格维度、边界条件和单位。
     def __exit__(self, exc_type, exc_val, exc_tb):
         # Restore the saved states
         random.setstate(self.random_state)
@@ -1016,6 +1046,7 @@ class DeterministicCtx:
             torch.cuda.set_rng_state(self.torch_cuda_random_state)
 
 
+# [中文注释] 实现 set_torch_deterministic；结合调用处核对物理量、网格维度、边界条件和单位。
 def set_torch_deterministic(seed: int = 0) -> None:
     seed = int(seed) % (2**32)
     torch.manual_seed(seed)
@@ -1027,6 +1058,7 @@ def set_torch_deterministic(seed: int = 0) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+# [中文注释] 实现 numerical_gradient_2d；结合调用处核对物理量、网格维度、边界条件和单位。
 def numerical_gradient_2d(phi, d_size):
     grad_x = torch.zeros_like(phi)
     grad_y = torch.zeros_like(phi)
@@ -1055,6 +1087,7 @@ def numerical_gradient_2d(phi, d_size):
 
 
 # Auxiliary function to calculate first and second order partial derivatives.
+# [中文注释] 构造离散导数/Jacobian 算子，为场求解或伴随梯度提供数值基础。
 def ls_derivatives(phi, d_size):
     SC = 1e-12
 
@@ -1076,12 +1109,15 @@ def ls_derivatives(phi, d_size):
 
 # Minimum gap size fabrication constraint integrand calculation.
 # The "beta" parameter relax the constraint near the zero plane.
+# [中文注释] 定义 fab_penalty_ls_gap 类，封装电磁求解/优化相关状态。
 class fab_penalty_ls_gap(torch.nn.Module):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, beta=1, min_feature_size=1):
         super(fab_penalty_ls_gap, self).__init__()
         self.beta = beta
         self.min_feature_size = min_feature_size
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, data):
         params = data["params"]
         x_rho = data["x_rho"]
@@ -1128,12 +1164,15 @@ class fab_penalty_ls_gap(torch.nn.Module):
 #                          sharpness = 1,
 #                          min_feature_size=min_feature_size,
 #                          grid_size=ls_grid_size):
+# [中文注释] 定义 fab_penalty_ls_curve 类，封装电磁求解/优化相关状态。
 class fab_penalty_ls_curve(torch.nn.Module):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, alpha=1, min_feature_size=1):
         super(fab_penalty_ls_curve, self).__init__()
         self.alpha = alpha
         self.min_feature_size = min_feature_size
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, data):
         params = data["params"]
         x_rho = data["x_rho"]
@@ -1167,6 +1206,7 @@ class fab_penalty_ls_curve(torch.nn.Module):
         )
 
 
+# [中文注释] 实现 padding_to_tiles；结合调用处核对物理量、网格维度、边界条件和单位。
 def padding_to_tiles(x, tile_size):
     """
     Pads the input tensor to a size that is a multiple of the tile size.
@@ -1183,6 +1223,7 @@ def padding_to_tiles(x, tile_size):
     return x, pady_0, pady_1, padx_0, padx_1
 
 
+# [中文注释] 实现 rip_padding；结合调用处核对物理量、网格维度、边界条件和单位。
 def rip_padding(eps, pady_0, pady_1, padx_0, padx_1):
     """
     Removes the padding from the input tensor.
@@ -1190,11 +1231,14 @@ def rip_padding(eps, pady_0, pady_1, padx_0, padx_1):
     return eps[padx_0:-padx_1, pady_0:-pady_1]
 
 
+# [中文注释] 定义 ComplexL1Loss 类，封装电磁求解/优化相关状态。
 class ComplexL1Loss(torch.nn.MSELoss):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, norm=False) -> None:
         super().__init__()
         self.norm = norm
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, x: Tensor, target: Tensor) -> Tensor:
         """Complex L1 loss between the predicted electric field and target field
 
@@ -1215,12 +1259,15 @@ class ComplexL1Loss(torch.nn.MSELoss):
         return F.l1_loss(torch.view_as_real(x), torch.view_as_real(target))
 
 
+# [中文注释] 定义 NormalizedMSELoss 类，封装电磁求解/优化相关状态。
 class NormalizedMSELoss(torch.nn.modules.loss._Loss):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, reduce="mean"):
         super(NormalizedMSELoss, self).__init__()
 
         self.reduce = reduce
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, x, y, mask):
         one_mask = mask != 0
 
@@ -1229,12 +1276,15 @@ class NormalizedMSELoss(torch.nn.modules.loss._Loss):
         return (error_energy / field_energy).mean()
 
 
+# [中文注释] 定义 NL2NormLoss 类，封装电磁求解/优化相关状态。
 class NL2NormLoss(torch.nn.modules.loss._Loss):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, reduce="mean"):
         super(NL2NormLoss, self).__init__()
 
         self.reduce = reduce
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, x, y, mask):
         one_mask = mask != 0
 
@@ -1243,7 +1293,9 @@ class NL2NormLoss(torch.nn.modules.loss._Loss):
         return (error_energy / field_energy).mean()
 
 
+# [中文注释] 定义 maskedNMSELoss 类，封装电磁求解/优化相关状态。
 class maskedNMSELoss(torch.nn.modules.loss._Loss):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self, reduce="mean", weighted_frames=10, weight=1, if_spatial_mask=True
     ):
@@ -1254,6 +1306,7 @@ class maskedNMSELoss(torch.nn.modules.loss._Loss):
         self.weight = weight
         self.if_spatial_mask = if_spatial_mask
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, x, y, mask, num_iters=1):
         frame_mask = None
         ones_mask = mask != 0
@@ -1285,7 +1338,9 @@ class maskedNMSELoss(torch.nn.modules.loss._Loss):
             return ((error_energy / field_energy).mean(dim=(-1))).mean()
 
 
+# [中文注释] 定义 maskedNL2NormLoss 类，封装电磁求解/优化相关状态。
 class maskedNL2NormLoss(torch.nn.modules.loss._Loss):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self, reduce="mean", weighted_frames=10, weight=1, if_spatial_mask=True
     ):
@@ -1296,6 +1351,7 @@ class maskedNL2NormLoss(torch.nn.modules.loss._Loss):
         self.weight = weight
         self.if_spatial_mask = if_spatial_mask
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, x, y, mask, num_iters=1):
         frame_mask = None
         ones_mask = mask != 0
@@ -1327,6 +1383,7 @@ class maskedNL2NormLoss(torch.nn.modules.loss._Loss):
             return ((error_energy / field_energy).mean(dim=(-1))).mean()
 
 
+# [中文注释] 实现 normalize；结合调用处核对物理量、网格维度、边界条件和单位。
 def normalize(x):
     if isinstance(x, np.ndarray):
         x_min, x_max = np.percentile(x, 5), np.percentile(x, 95)
@@ -1339,6 +1396,7 @@ def normalize(x):
     return x
 
 
+# [中文注释] 实现 print_stat；结合调用处核对物理量、网格维度、边界条件和单位。
 def print_stat(x, dist=False):
     total_number = None
     distribution = None
@@ -1359,13 +1417,16 @@ def print_stat(x, dist=False):
         )
 
 
+# [中文注释] 定义 TemperatureScheduler 类，封装电磁求解/优化相关状态。
 class TemperatureScheduler:
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, initial_T, final_T, total_steps):
         self.initial_T = initial_T
         self.final_T = final_T
         self.total_steps = total_steps
         self.current_step = 0
 
+    # [中文注释] 实现 step；结合调用处核对物理量、网格维度、边界条件和单位。
     def step(self):
         self.current_step += 1
         if self.current_step > self.total_steps:
@@ -1375,12 +1436,15 @@ class TemperatureScheduler:
         self.current_T = self.final_T + 0.5 * (self.initial_T - self.final_T) * cos_out
         return self.current_T
 
+    # [中文注释] 实现 get_temperature；结合调用处核对物理量、网格维度、边界条件和单位。
     def get_temperature(self):
         return self.current_T
 
 
+# [中文注释] 定义 SharpnessScheduler 类，封装电磁求解/优化相关状态。
 class SharpnessScheduler(object):
     __mode_list__ = {"cosine", "quadratic"}
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, initial_sharp: float, final_sharp: float, total_steps: int, mode:str="cosine"):
         super().__init__()
         self.initial_sharp = initial_sharp
@@ -1390,6 +1454,7 @@ class SharpnessScheduler(object):
         self.current_sharp = initial_sharp
         self.mode = mode
         assert mode in self.__mode_list__, f"mode should be one of {self.__mode_list__}, but got {mode}"
+    # [中文注释] 实现 _step_cosine；结合调用处核对物理量、网格维度、边界条件和单位。
     def _step_cosine(self):
         self.current_step += 1
         if self.current_step > self.total_steps:
@@ -1407,6 +1472,7 @@ class SharpnessScheduler(object):
         )
         return self.current_sharp
     
+    # [中文注释] 实现 _step_quadratic；结合调用处核对物理量、网格维度、边界条件和单位。
     def _step_quadratic(self):
         self.current_step += 1
         if self.current_step > self.total_steps:
@@ -1416,6 +1482,7 @@ class SharpnessScheduler(object):
         )
         return self.current_sharp
     
+    # [中文注释] 实现 step；结合调用处核对物理量、网格维度、边界条件和单位。
     def step(self):
         if self.mode == "cosine":
             return self._step_cosine()
@@ -1424,9 +1491,11 @@ class SharpnessScheduler(object):
         else:
             raise ValueError(f"mode should be one of {self.__mode_list__}, but got {self.mode}")
 
+    # [中文注释] 实现 get_sharpness；结合调用处核对物理量、网格维度、边界条件和单位。
     def get_sharpness(self):
         return self.current_sharp
 
+    # [中文注释] 实现 reset；结合调用处核对物理量、网格维度、边界条件和单位。
     def reset(self, new_init_sharp=None, new_fianl_sharp=None, new_total_steps=None):
         if new_init_sharp is not None:
             self.initial_sharp = new_init_sharp
@@ -1438,13 +1507,16 @@ class SharpnessScheduler(object):
             self.total_steps = new_total_steps
 
 
+# [中文注释] 定义 ResolutionScheduler 类，封装电磁求解/优化相关状态。
 class ResolutionScheduler:
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, initial_res, final_res, total_steps):
         self.initial_res = initial_res
         self.final_res = final_res
         self.total_steps = total_steps
         self.current_step = 0
 
+    # [中文注释] 实现 step；结合调用处核对物理量、网格维度、边界条件和单位。
     def step(self):
         self.current_step += 1
         if self.current_step > self.total_steps:
@@ -1461,15 +1533,19 @@ class ResolutionScheduler:
         )
         return self.current_res
 
+    # [中文注释] 实现 get_resolution；结合调用处核对物理量、网格维度、边界条件和单位。
     def get_resolution(self):
         return self.current_res
 
 
+# [中文注释] 定义 DistanceLoss 类，封装电磁求解/优化相关状态。
 class DistanceLoss(torch.nn.modules.loss._Loss):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, min_distance=0.15):
         super(DistanceLoss, self).__init__()
         self.min_distance = min_distance
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, hole_position):
         hole_position = torch.flatten(hole_position, start_dim=0, end_dim=1)
         distance = torch.zeros(hole_position.shape[0], hole_position.shape[0])
@@ -1485,11 +1561,14 @@ class DistanceLoss(torch.nn.modules.loss._Loss):
         return distance_penalty
 
 
+# [中文注释] 定义 AspectRatioLoss 类，封装电磁求解/优化相关状态。
 class AspectRatioLoss(torch.nn.modules.loss._Loss):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, aspect_ratio=1):
         super(AspectRatioLoss, self).__init__()
         self.aspect_ratio = aspect_ratio
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, input):
         height = input["height"]
         width = input["width"]
@@ -1512,6 +1591,7 @@ class AspectRatioLoss(torch.nn.modules.loss._Loss):
         return gap_penalty + width_penalty
 
 
+# [中文注释] 实现 padding_to_tiles；结合调用处核对物理量、网格维度、边界条件和单位。
 def padding_to_tiles(x, tile_size):
     """
     Pads the input tensor to a size that is a multiple of the tile size.
@@ -1528,6 +1608,7 @@ def padding_to_tiles(x, tile_size):
     return x, pady_0, pady_1, padx_0, padx_1
 
 
+# [中文注释] 实现 rip_padding；结合调用处核对物理量、网格维度、边界条件和单位。
 def rip_padding(eps, pady_0, pady_1, padx_0, padx_1):
     """
     Removes the padding from the input tensor.
@@ -1535,7 +1616,9 @@ def rip_padding(eps, pady_0, pady_1, padx_0, padx_1):
     return eps[padx_0:-padx_1, pady_0:-pady_1]
 
 
+# [中文注释] 定义 MaxwellResidualLoss 类，封装电磁求解/优化相关状态。
 class MaxwellResidualLoss(torch.nn.modules.loss._Loss):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         wl_cen: float = 1.55,
@@ -1553,6 +1636,7 @@ class MaxwellResidualLoss(torch.nn.modules.loss._Loss):
         self.omegas = 2 * np.pi * C_0 / (self.wl_list * MICRON_UNIT)
         self.using_ALM = using_ALM
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(self, Ez: Tensor, source: Tensor, As, transpose_A):
         Ez = Ez[:, -2:, :, :]
         Ez = Ez.permute(0, 2, 3, 1).contiguous()
@@ -1634,12 +1718,15 @@ class MaxwellResidualLoss(torch.nn.modules.loss._Loss):
         return loss
 
 
+# [中文注释] 定义 GradientLoss 类，封装电磁求解/优化相关状态。
 class GradientLoss(torch.nn.modules.loss._Loss):
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, reduce="mean"):
         super(GradientLoss, self).__init__()
 
         self.reduce = reduce
 
+    # [中文注释] 实现 forward；结合调用处核对物理量、网格维度、边界条件和单位。
     def forward(
         self,
         forward_fields,
@@ -1700,9 +1787,11 @@ class GradientLoss(torch.nn.modules.loss._Loss):
         return (error_energy / field_energy).mean()
 
 
+# [中文注释] 定义 LevelSetInterp 类，封装电磁求解/优化相关状态。
 class LevelSetInterp(object):
     """This class implements the level set surface using Gaussian radial basis functions."""
 
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self,
         x0: Tensor = None,
@@ -1726,6 +1815,7 @@ class LevelSetInterp(object):
         )  # Solve gauss_kernel @ model = z0
         # self.model = torch.linalg.solve(gauss_kernel, self.z0) # sees more stable
 
+    # [中文注释] 实现 gaussian；结合调用处核对物理量、网格维度、边界条件和单位。
     def gaussian(self, xyi, xyj):
         dist = torch.sqrt(
             (xyi[:, 1].reshape(-1, 1) - xyj[:, 1].reshape(1, -1)) ** 2
@@ -1733,6 +1823,7 @@ class LevelSetInterp(object):
         )
         return torch.exp(-(dist**2) / (2 * self.sig**2)).to(self.device)
 
+    # [中文注释] 实现 get_ls；结合调用处核对物理量、网格维度、边界条件和单位。
     def get_ls(self, x1, y1):
         xx, yy = torch.meshgrid(y1, x1, indexing="ij")
         xy1 = torch.column_stack((xx.reshape(-1), yy.reshape(-1)))
@@ -1740,6 +1831,7 @@ class LevelSetInterp(object):
         return ls
 
 
+# [中文注释] 实现 get_eps；结合调用处核对物理量、网格维度、边界条件和单位。
 def get_eps(
     design_param,
     x_rho,
@@ -1779,6 +1871,7 @@ def get_eps(
     return eps
 
 
+# [中文注释] 实现 plot_level_set；结合调用处核对物理量、网格维度、边界条件和单位。
 def plot_level_set(x0, y0, rho, x1, y1, phi):
     y, x = np.meshgrid(y0, x0)
     yy, xx = np.meshgrid(y1, x1)
@@ -1818,6 +1911,7 @@ def plot_level_set(x0, y0, rho, x1, y1, phi):
     plt.show()
 
 
+# [中文注释] 实现 grid_average；结合调用处核对物理量、网格维度、边界条件和单位。
 def grid_average(e, monitor, direction: str = "x", autograd=False, pol: str = "Ez"):
     if autograd:
         mean = npa.mean
@@ -1885,6 +1979,7 @@ def grid_average(e, monitor, direction: str = "x", autograd=False, pol: str = "E
     return e_yee_shifted
 
 
+# [中文注释] 实现 get_flux；结合调用处核对物理量、网格维度、边界条件和单位。
 def get_flux(
     hx,
     hy,
@@ -1935,6 +2030,7 @@ def get_flux(
     return s
 
 
+# [中文注释] 实现 get_shape；结合调用处核对物理量、网格维度、边界条件和单位。
 def get_shape(shape_type, shape_cfg, field_size, grid_step, device):
     shape_cfg["size"] = field_size[
         -1
@@ -1943,6 +2039,7 @@ def get_shape(shape_type, shape_cfg, field_size, grid_step, device):
     return shape_dict[shape_type](**shape_cfg, device=device)
 
 
+# [中文注释] 实现 get_shape_similarity；结合调用处核对物理量、网格维度、边界条件和单位。
 def get_shape_similarity(
     field,  # slices field
     grid_step,
@@ -1985,6 +2082,7 @@ Slice = collections.namedtuple("Slice", "x y")
 
 
 @lru_cache(maxsize=64)
+# [中文注释] 实现 Si_eps；结合调用处核对物理量、网格维度、边界条件和单位。
 def Si_eps(wavelength):
     """Returns the permittivity of silicon at the given wavelength"""
     return 3.48**2
@@ -1992,6 +2090,7 @@ def Si_eps(wavelength):
 
 
 @lru_cache(maxsize=64)
+# [中文注释] 实现 SiO2_eps；结合调用处核对物理量、网格维度、边界条件和单位。
 def SiO2_eps(wavelength):
     """Returns the permittivity of silicon at the given wavelength"""
     return 1.44**2
@@ -1999,18 +2098,21 @@ def SiO2_eps(wavelength):
 
 
 @lru_cache(maxsize=64)
+# [中文注释] 实现 Air_eps；结合调用处核对物理量、网格维度、边界条件和单位。
 def Air_eps(wavelength):
     """Returns the permittivity of silicon at the given wavelength"""
     return 1
 
 
 @lru_cache(maxsize=64)
+# [中文注释] 实现 SiN_eps；结合调用处核对物理量、网格维度、边界条件和单位。
 def SiN_eps(wavelength):
     """Returns the permittivity of silicon at the given wavelength"""
     return 2.45**2
     return SiO2.epsilon(1 / wavelength)[0, 0].real
 
 @lru_cache(maxsize=64)
+# [中文注释] 实现 TiO2_eps；结合调用处核对物理量、网格维度、边界条件和单位。
 def TiO2_eps(wavelength):
     """Returns the permittivity of silicon at the given wavelength"""
     return 2.9**2

@@ -1,6 +1,3 @@
-# 中文学习注释：保持原始实现不变，仅添加阅读辅助说明。
-# 模块路径：core/datasets/connectionist.py；关注数据来源、预处理、样本/标签格式、张量形状和数据划分。
-
 # import re
 # import torch
 # from torch.utils.data import Dataset, DataLoader
@@ -148,9 +145,7 @@ from typing import Tuple, Optional
 import random
 
 
-# [中文注释] 定义 VowelDataset 数据类/对象，封装数据集状态和读取接口。
 class VowelDataset(Dataset):
-    # [中文注释] 初始化数据集；检查路径、变换、划分方式和默认参数。
     def __init__(
         self,
         root: str,
@@ -189,7 +184,6 @@ class VowelDataset(Dataset):
 
         self.data = self._load_and_split()
 
-    # [中文注释] 实现 _load_and_split；结合调用处确认数据流及预处理含义。
     def _load_and_split(self):
         with open(self.file_path, "r") as f:
             raw = f.read()
@@ -230,17 +224,14 @@ class VowelDataset(Dataset):
             test = [(x, y) for (x, y, _) in test_data]
             return test[:self.n_test_samples] if self.n_test_samples else test
 
-    # [中文注释] 返回单个样本及标签；确认数据类型、维度和变换顺序。
     def __getitem__(self, index):
         x, y = self.data[index]
         x = [((v - self.min_value) / (self.max_value - self.min_value)) * torch.pi for v in x]
         return torch.tensor(x, dtype=torch.float32), torch.tensor(y, dtype=torch.long)
 
-    # [中文注释] 返回数据集样本数量。
     def __len__(self):
         return len(self.data)
 
-# [中文注释] 实现 test_vowel_dataset；结合调用处确认数据流及预处理含义。
 def test_vowel_dataset():
     root = "./data/connectionist"
 

@@ -1,9 +1,3 @@
-# -----------------------------------------------------------------------------
-# 中文学习注释：仅增加说明，不修改原始算法、变量、默认参数或执行流程。
-# 文件职责：一维端到端光学卷积层：定义可训练的振幅/相位响应、传输矩阵缓存及光场传播前向计算。
-# 阅读建议：结合调用处检查输入/输出形状、复数数据类型、单位、边界条件及梯度流。
-# -----------------------------------------------------------------------------
-
 from functools import lru_cache
 from typing import List, Optional, Tuple, Union
 
@@ -37,7 +31,6 @@ __all__ = ["MetaParams", "MetaConv1dETE"]
 
 DEBUG = False
 
-# [中文注释] 实现 load_lut_from_csv 功能；请结合调用处确认输入、输出和状态变化。
 def load_lut_from_csv(csv_path):
     widths = []
     phases = []
@@ -63,7 +56,6 @@ def load_lut_from_csv(csv_path):
 
     return lut_widths, amp_lut, phase_lut
 
-# [中文注释] 实现 torch_interpolate_1d 功能；请结合调用处确认输入、输出和状态变化。
 def torch_interpolate_1d(x, xp, fp):
     """
     Mimics numpy.interp(x, xp, fp) using torch operations.
@@ -78,10 +70,8 @@ def torch_interpolate_1d(x, xp, fp):
     slope = (y1 - y0) / (x1 - x0 + 1e-12)
     return y0 + slope * (x - x0)
 
-# [中文注释] 定义 CPositionAdaptiveConv1D 类，封装相关状态、参数和计算方法。
 class CPositionAdaptiveConv1D(nn.Module):
 
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(
         self,
         length: int,
@@ -167,7 +157,6 @@ class CPositionAdaptiveConv1D(nn.Module):
             )
         )
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_metalens_optimization(self):
         total_sim_cfg = DefaultSimulationConfig()
         total_sim_cfg.update(
@@ -211,7 +200,6 @@ class CPositionAdaptiveConv1D(nn.Module):
             design_region_param_cfgs={},
         )
 
-    # [中文注释] 实现 init_param 功能；请结合调用处确认输入、输出和状态变化。
     def init_param(self):
         if self.TM_model_method == "default":
             self.phase = nn.Parameter(
@@ -308,17 +296,14 @@ class CPositionAdaptiveConv1D(nn.Module):
         else:
             raise ValueError(f"TM model method {self.TM_model_method} is not supported, please use default or conv.")
 
-    # [中文注释] 设置或更新 lookup_table 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_lookup_table(self, lut_widths: torch.Tensor, amp: torch.Tensor, phase: torch.Tensor):
         self.register_buffer("lut_widths", lut_widths.to(self.device))
         self.register_buffer("amp_lut", amp.to(self.device))
         self.register_buffer("phase_lut", phase.to(self.device))
 
-    # [中文注释] 设置或更新 test_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_test_mode(self, test_mode: bool = True):
         self.test_mode = test_mode
 
-    # [中文注释] 实现 reset_parameters 功能；请结合调用处确认输入、输出和状态变化。
     def reset_parameters(self):
         if self.fixed_amp:
             amp_init = torch.zeros_like(self.amp)
@@ -331,7 +316,6 @@ class CPositionAdaptiveConv1D(nn.Module):
         # weight = amp_init * torch.exp(1j * phase_init)
         # self.weight.data.copy_(weight)
 
-    # [中文注释] 设置或更新 param_from_target_matrix 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_param_from_target_matrix(self, W_target: torch.Tensor, if_quit=False):
         # have to ensure that the target matrix is noemalized and the shape is the same as the current weight matrix
         if self.max_tm_norm:
@@ -418,7 +402,6 @@ class CPositionAdaptiveConv1D(nn.Module):
         else:
             raise ValueError(f"TM model method {self.TM_model_method} is not supported, please use default or conv or fourier_basis.")
 
-    # [中文注释] 读取并返回 convolution_kernel 相关状态；核对返回值形状、单位和数据类型。
     def get_convolution_kernel(self) -> torch.Tensor:
         widths = self.widths  # (K,)
         # print("this is the widths:", widths, flush=True)
@@ -427,7 +410,6 @@ class CPositionAdaptiveConv1D(nn.Module):
         return amp * torch.exp(1j * phase)
 
     
-    # [中文注释] 读取并返回 transfer_matrix_from_conv 相关状态；核对返回值形状、单位和数据类型。
     def get_transfer_matrix_from_conv(self) -> torch.Tensor:
         """
         Construct a Toeplitz-like transfer matrix that applies the same effect as conv1d
@@ -445,7 +427,6 @@ class CPositionAdaptiveConv1D(nn.Module):
 
         return tm
 
-    # [中文注释] 读取并返回 transfer_matrix 相关状态；核对返回值形状、单位和数据类型。
     def get_transfer_matrix(self, sharpness: float = None) -> torch.Tensor:
         """
         Build the (L x L) complex matrix W by combining amplitude and angle
@@ -516,7 +497,6 @@ class CPositionAdaptiveConv1D(nn.Module):
             if not self.test_mode:
                 transfer_matrix = transfer_matrix * self.zero_mask
             return transfer_matrix
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, x: torch.Tensor, sharpness: float = None) -> torch.Tensor:
         """
         x: (batch_size, L) complex
@@ -607,11 +587,9 @@ class CPositionAdaptiveConv1D(nn.Module):
             ).view_as(x)
         return out
     
-    # [中文注释] 实现 extra_repr 功能；请结合调用处确认输入、输出和状态变化。
     def extra_repr(self) -> str:
         return f"length={self.length}, kernel_size={self.kernel_size}, stride={self.stride}"
 
-    # [中文注释] 读取并返回 transfer_matrix_from_end2end 相关状态；核对返回值形状、单位和数据类型。
     def get_transfer_matrix_from_end2end(self, sharpness: float = None) -> torch.Tensor:
         full_wave_down_sample_rate = self.in_downsample_rate
         number_atoms = self.length
@@ -700,7 +678,6 @@ class CPositionAdaptiveConv1D(nn.Module):
         #     self.total_opt.objective.sims[sim_key[0]].solver.set_cache_mode(False)
         return full_wave_response
 
-# [中文注释] 定义 MetaParams 类，封装相关状态、参数和计算方法。
 class MetaParams(nn.Module):
     path_depth: int
     path_multiplier: int
@@ -719,7 +696,6 @@ class MetaParams(nn.Module):
     lambda_data: float
     pixel_size_data: float
 
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(
         self,
         path_depth: int = 2,
@@ -836,7 +812,6 @@ class MetaParams(nn.Module):
         self.build_parameters()
         self.reset_parameters()
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_parameters(self) -> None:
         self.pixel_size = nn.Parameter(
             torch.empty(1, device=self.device),
@@ -907,7 +882,6 @@ class MetaParams(nn.Module):
             self.swap_permutation = None
             self.swap_alm_multiplier = None
 
-    # [中文注释] 实现 reset_parameters 功能；请结合调用处确认输入、输出和状态变化。
     def reset_parameters(self):
         self.pixel_size.data.fill_(self.pixel_size_data)
         self.delta_z.data.fill_(self.delta_z_data)
@@ -932,64 +906,50 @@ class MetaParams(nn.Module):
         if self.swap_alm_multiplier is not None:
             self.swap_alm_multiplier.data.zero_()
 
-    # [中文注释] 设置或更新 delta_z_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_delta_z_mode(self, mode: bool = True):
         self.delta_z_mode = mode
 
-    # [中文注释] 设置或更新 pixel_size_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_pixel_size_mode(self, mode: bool = True):
         self.pixel_size_mode = mode
 
-    # [中文注释] 设置或更新 lambda_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_lambda_mode(self, mode: bool = True):
         self.lambda_mode = mode
 
-    # [中文注释] 设置或更新 rotate_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_rotate_mode(self, mode: bool = True):
         self.rotate_mode = mode
 
-    # [中文注释] 设置或更新 gumbel_temperature 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_gumbel_temperature(self, T: float = 5.0):
         self.gumbel_T = T
 
-    # [中文注释] 设置或更新 gumbel_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_gumbel_mode(self, mode: str = "gumbel_soft"):
         self.gumbel_mode = mode
 
-    # [中文注释] 设置或更新 swap_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_swap_mode(self, mode: bool = True):
         self.swap_mode = mode
 
-    # [中文注释] 设置或更新 pixel_size_res 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_pixel_size_res(self, res: int) -> None:
         self.pixel_size_res = res
         self.pixel_size_quantizer.set_resolution(res)
 
-    # [中文注释] 设置或更新 delta_z_res 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_delta_z_res(self, res: int) -> None:
         self.delta_z_res = res
         self.delta_z_quantizer.set_resolution(res)
 
-    # [中文注释] 设置或更新 delta_z_data 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_delta_z_data(self, data: float) -> None:
         self.delta_z_data = data
         self.delta_z.data.fill_(self.delta_z_data)
 
-    # [中文注释] 设置或更新 lambda_data 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_lambda_data(self, data: float) -> None:
         self.lambda_data = data
         self.lambda_.data.fill_(self.lambda_data)
 
-    # [中文注释] 设置或更新 pixel_size_data 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_pixel_size_data(self, data: float) -> None:
         self.pixel_size_data = data
         self.pixel_size.data.fill_(self.pixel_size_data)
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_pixel_size(self) -> Tensor:
         return self.pixel_size.abs()  # [1] positive only
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_delta_z(self, stage: int = 0) -> Tensor:
         if self.delta_z_mode == "train_stage":
             delta_z = self.delta_z[stage]
@@ -1000,11 +960,9 @@ class MetaParams(nn.Module):
 
         return self.delta_z_quantizer(delta_z.abs())  # [1] positive only
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_lambda(self) -> Tensor:
         return self.lambda_.abs()
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_constraint_pixel_size_and_lambda(self) -> Tuple[Tensor, Tensor]:
         ## pixel_size and lambda are both positive
         pixel_size = self.build_pixel_size()
@@ -1014,14 +972,12 @@ class MetaParams(nn.Module):
 
         return self.pixel_size_quantizer(pixel_size), self.lambda_quantizer(lambda_)
 
-    # [中文注释] 实现 update_lambda_pixel_size 功能；请结合调用处确认输入、输出和状态变化。
     def update_lambda_pixel_size(self) -> None:
         with torch.no_grad():
             pixel_size, lambda_ = self.build_constraint_pixel_size_and_lambda()
             self.pixel_size.data.copy_(pixel_size)
             self.lambda_.data.copy_(lambda_)
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_rotate_mask(self, mode=None, batch_size: int = 32) -> Tensor:
         mode = mode or self.gumbel_mode
         logits = self.rotate_gumbel_coeff  # [m, d, 4]
@@ -1066,7 +1022,6 @@ class MetaParams(nn.Module):
             raise NotImplementedError(f"Invalid gumbel_mode: {mode}")
         return self.rotate_mask  # [m, d, 8] or [m, d, 9]
 
-    # [中文注释] 实现 apply_rotate_mask 功能；请结合调用处确认输入、输出和状态变化。
     def apply_rotate_mask(self, weight: Tensor, rotate_mask: Tensor):
         ## weight is the metasurface phases [m, d, 2, s, s]
         ## rotate_mask is the rotation mask sampled using gubem softmax trick [m, d, 8] or [m, d, 9]
@@ -1111,7 +1066,6 @@ class MetaParams(nn.Module):
 
         return weight  # [m,d,1,s]
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_swap_permutation(self) -> Tensor:
         ## reparametrization of permutation matrix to relax the constraint
         # abs -> row/col L1-normalization -> projection to legal permutation and stop gradient
@@ -1132,7 +1086,6 @@ class MetaParams(nn.Module):
             )  # W -> P # once it is very close to permutation, it will be trapped and legalized without any gradients.
         return weight
 
-    # [中文注释] 实现 apply_swap 功能；请结合调用处确认输入、输出和状态变化。
     def apply_swap(self, weight: Tensor):
         ## weight is the metasurface phases [m, d, 2, s, s]
         ## swap_permutation is the permutation matrix [d, m, m] or [dm, dm]
@@ -1157,7 +1110,6 @@ class MetaParams(nn.Module):
 
         return weight
 
-    # [中文注释] 读取并返回 swap_loss 相关状态；核对返回值形状、单位和数据类型。
     def get_swap_loss(self):
         """https://www.math.uci.edu/~jxin/AutoShuffleNet_KDD2020F.pdf"""
         weight = self.build_swap_permutation()
@@ -1167,7 +1119,6 @@ class MetaParams(nn.Module):
         )
         return loss
 
-    # [中文注释] 读取并返回 swap_alm_loss 相关状态；核对返回值形状、单位和数据类型。
     def get_swap_alm_loss(self, rho: float = 0.1):
         if self.swap_mode == "fixed":
             return 0
@@ -1187,13 +1138,11 @@ class MetaParams(nn.Module):
         )
         return loss
 
-    # [中文注释] 实现 check_perm 功能；请结合调用处确认输入、输出和状态变化。
     def check_perm(self, indices):
         return tuple(range(len(indices))) == tuple(
             sorted(indices.cpu().numpy().tolist())
         )
 
-    # [中文注释] 实现 _get_num_crossings 功能；请结合调用处确认输入、输出和状态变化。
     def _get_num_crossings(self, in_indices):
         res = 0
         for idx, i in enumerate(in_indices):
@@ -1202,7 +1151,6 @@ class MetaParams(nn.Module):
                     res += 1
         return res
 
-    # [中文注释] 实现 unitary_projection 功能；请结合调用处确认输入、输出和状态变化。
     def unitary_projection(self, w: Tensor, n_step=10, t=0.005, noise_std=0.01):
         w = w.div(t).softmax(dim=-1).round()
         legal_solution = []
@@ -1219,7 +1167,6 @@ class MetaParams(nn.Module):
         w = legal_solution[0][1]
         return w
 
-    # [中文注释] 实现 update_swap_alm_multiplier 功能；请结合调用处确认输入、输出和状态变化。
     def update_swap_alm_multiplier(
         self, rho: float = 0.1, max_lambda: Optional[float] = None
     ):
@@ -1244,7 +1191,6 @@ class MetaParams(nn.Module):
             if max_lambda is not None:
                 self.swap_alm_multiplier.data.clamp_max_(max_lambda)
 
-    # [中文注释] 实现 extra_repr 功能；请结合调用处确认输入、输出和状态变化。
     def extra_repr(self):
         if self.path_depth is not None:
             s = "path_depth={path_depth}"
@@ -1285,9 +1231,7 @@ class MetaParams(nn.Module):
         return s.format(**self.__dict__)
 
 
-# [中文注释] 定义 _MetaConv1dMultiPath 类，封装相关状态、参数和计算方法。
 class _MetaConv1dMultiPath(Meta_Layer_BASE):
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(
         self,
         length: int,
@@ -1468,16 +1412,13 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
         self.build_parameters(bias=bias)
         self.reset_parameters()
 
-    # [中文注释] 设置或更新 test_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_test_mode(self, test_mode: bool = True):
         for name, module in self.metalens.items():
             module.set_test_mode(test_mode)
 
-    # [中文注释] 设置或更新 near2far_matrix 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_near2far_matrix(self, near2far_matrix: Tensor):
         self.near2far_matrix = near2far_matrix
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_parameters(self, bias: bool) -> None:
         self.meta_params = None
         self.in_channels_flat = self.in_channels // self.groups
@@ -1564,7 +1505,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
         else:
             self.register_parameter("bias", None)
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_paconv(self):
         self.metalens = nn.ModuleDict()
         print("this is self.mode that will be used", self.mode, flush=True)
@@ -1591,7 +1531,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
                     LUT_path="core/metaatom_response_fsdx-0.3.csv",
                 )
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_path_weight(self):
         # Ensure normalization across each n x n tensor
         path_weight = self.path_weight
@@ -1614,7 +1553,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
 
         return path_weight
 
-    # [中文注释] 实现 reset_parameters 功能；请结合调用处确认输入、输出和状态变化。
     def reset_parameters(self):
         super().reset_parameters()
         nn.init.constant_(self.alm_multiplier.data, 0)
@@ -1622,13 +1560,11 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
         # nn.init.constant_(self.beta.data, 1)
 
     # From 0 to 2pi
-    # [中文注释] 实现 phase_rounding 功能；请结合调用处确认输入、输出和状态变化。
     def phase_rounding(self):
         with torch.no_grad():
             # self.weight.copy_((self.weight + torch.pi) % (2 * torch.pi) - torch.pi)
             self.weight.copy_(self.weight % (2 * torch.pi))
 
-    # [中文注释] 读取并返回 perm_loss 相关状态；核对返回值形状、单位和数据类型。
     def get_perm_loss(self):
         path_weight = self.build_path_weight()
         loss = path_weight.data.norm(p=1, dim=1).sub(
@@ -1636,7 +1572,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
         ).mean(dim=-1) + (1 - path_weight.data.norm(p=2, dim=2)).mean(dim=(-1))
         return loss
 
-    # [中文注释] 读取并返回 alm_perm_loss 相关状态；核对返回值形状、单位和数据类型。
     def get_alm_perm_loss(self, rho: float = 0.1):
         ## quadratic tern is also controlled multiplier
         path_weight = self.build_path_weight()
@@ -1658,7 +1593,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
 
         return loss
 
-    # [中文注释] 实现 update_alm_multiplier 功能；请结合调用处确认输入、输出和状态变化。
     def update_alm_multiplier(
         self, rho: float = 0.1, max_lambda: Optional[float] = None
     ):
@@ -1682,7 +1616,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
             if max_lambda is not None:
                 self.alm_multiplier.data.clamp_max_(max_lambda)
 
-    # [中文注释] 实现 path_generation 功能；请结合调用处确认输入、输出和状态变化。
     def path_generation(self, path_weight):
         path_before_transpose = torch.argmax(path_weight, dim=-1)
         path_after_transpose = torch.transpose(path_before_transpose, 0, 1)
@@ -1697,7 +1630,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
 
         return repeated_a.unsqueeze(0).expand(self.out_channels, -1, -1)
 
-    # [中文注释] 读取并返回 smoothing_loss 相关状态；核对返回值形状、单位和数据类型。
     def get_smoothing_loss(self, lambda_smooth=1e-3) -> torch.Tensor:
         # print("Here2")
         """
@@ -1729,7 +1661,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
         # print(total_penalty)
         return total_penalty
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_initial_path(self):
         # [[0000],[1111], [2222]]
         # Generate a tensor of size (m, 1) ranging from 0 to m-1
@@ -1752,7 +1683,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
             )  # [outc,inc,d]
         return repeated_a
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_alpha(self) -> Tensor:
         alpha_pre = self.alpha_pre
         alpha_post = self.alpha_post
@@ -1760,7 +1690,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
             alpha_post
         )
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_beta(self) -> Tensor:
         beta = self.beta
         if beta is not None:
@@ -1770,7 +1699,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
         # beta = torch.clamp(beta, min=0, max=1) # Add sigmoid or tanh
         return beta  # [outc, inc//group, 1, 1]
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_weight(self) -> Tensor:
         paths = self.build_initial_path()
 
@@ -1793,7 +1721,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
         return weight
 
     @lru_cache(maxsize=32)
-    # [中文注释] 实现 construct_coordinate_diff 功能；请结合调用处确认输入、输出和状态变化。
     def construct_coordinate_diff(self, k):
         # For a 1D line of length k, the 'positions' array is [k].
         x = torch.arange(k, device=self.device, dtype=torch.float32)
@@ -1801,7 +1728,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
         coord_diff = x[:, None] - x[None, :]  # Broadcasting differences
         return coord_diff
 
-    # [中文注释] 实现 encode_x_information 功能；请结合调用处确认输入、输出和状态变化。
     def encode_x_information(self, input: Tensor) -> Tensor:
         # assert self.encode_mode == "phase", f"only support phase encoding, but got {self.encode_mode}"
         if self.encode_mode == "intensity":
@@ -1818,7 +1744,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
             raise NotImplementedError(f"Invalid encode_mode: {self.encode_mode}")
         return input
 
-    # [中文注释] 构建所需对象/算子；核对配置参数如何映射到实际模型。
     def build_diffraction_matrix(self, stage: int = 0) -> Tensor:
         assert self.out_downsample_rate == self.in_downsample_rate, "downsample rate should be the same when using RS method"
         # k = self.kernel_size[0]
@@ -1935,7 +1860,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
     #     self.eps_vec_xx = eps_vec_xx
     #     self.eps_vec_yy = eps_vec_yy
 
-    # [中文注释] 实现 scale 功能；请结合调用处确认输入、输出和状态变化。
     def scale(self, x, size, mode="bilinear"):
         current_size = x.shape[-2:]
 
@@ -1968,7 +1892,6 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
 
         return x
 
-    # [中文注释] 实现 _forward_impl 功能；请结合调用处确认输入、输出和状态变化。
     def _forward_impl(self, x: tuple) -> Tensor:
         # modulation
         # x: [bs, inc, h, w] real
@@ -2156,13 +2079,11 @@ class _MetaConv1dMultiPath(Meta_Layer_BASE):
 
         return (x, inner_field[:-1])  # [bs, outc, h, w]
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, x: Tensor) -> Tensor:
         return self._forward_impl(x)
 
 
 @MODELS.register_module()
-# [中文注释] 定义 MetaConv1dETE 类，封装相关状态、参数和计算方法。
 class MetaConv1dETE(Meta_Layer_BASE):
     _conv_types = _MetaConv1dMultiPath
 
@@ -2199,7 +2120,6 @@ class MetaConv1dETE(Meta_Layer_BASE):
     gumbel_mode: str
     enable_identity: bool
 
-    # [中文注释] 初始化对象状态和依赖；重点检查默认参数、设备、张量形状及缓存。
     def __init__(
         self,
         in_channels: int,
@@ -2391,7 +2311,6 @@ class MetaConv1dETE(Meta_Layer_BASE):
         else:
             self.register_parameter("bias", None)
 
-    # [中文注释] 实现 reset_parameters 功能；请结合调用处确认输入、输出和状态变化。
     def reset_parameters(self):
         for m in self.modules():
             if isinstance(m, self._conv_types):
@@ -2399,33 +2318,28 @@ class MetaConv1dETE(Meta_Layer_BASE):
         if self.bias is not None:
             self.bias.data.zero_()
 
-    # [中文注释] 实现 requires_grad_Meta 功能；请结合调用处确认输入、输出和状态变化。
     def requires_grad_Meta(self, mode: bool = True):
         self._requires_grad_Meta = mode
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.requires_grad_Meta(mode)
 
-    # [中文注释] 读取并返回 perm_loss 相关状态；核对返回值形状、单位和数据类型。
     def get_perm_loss(self):
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.get_perm_loss()
 
-    # [中文注释] 读取并返回 smoothing_loss 相关状态；核对返回值形状、单位和数据类型。
     def get_smoothing_loss(self, smoothing_lambda=1e-3):
         # print("here1")
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 return(m.get_smoothing_loss(smoothing_lambda))
     
-    # [中文注释] 读取并返回 alm_perm_loss 相关状态；核对返回值形状、单位和数据类型。
     def get_alm_perm_loss(self):
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.get_alm_perm_loss()
 
-    # [中文注释] 设置或更新 input_er 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_input_er(self, er: float = 0, x_max: float = 6.0) -> None:
         ## extinction ratio of input modulator
         self.input_er = er
@@ -2434,62 +2348,53 @@ class MetaConv1dETE(Meta_Layer_BASE):
             if isinstance(m, self._conv_types):
                 m.set_input_er(er, x_max)
 
-    # [中文注释] 设置或更新 input_snr 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_input_snr(self, snr: float = 0) -> None:
         self.input_snr = snr
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.set_input_snr(snr)
 
-    # [中文注释] 设置或更新 detection_snr 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_detection_snr(self, snr: float = 0) -> None:
         self.detection_snr = snr
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.set_detection_snr(snr)
 
-    # [中文注释] 设置或更新 weight_train 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_weight_train(self, flag: bool = True) -> None:
         self.weight_train = flag
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.weight_train = flag
 
-    # [中文注释] 实现 phase_rounding 功能；请结合调用处确认输入、输出和状态变化。
     def phase_rounding(self) -> None:
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.phase_rounding()
 
-    # [中文注释] 设置或更新 alpha_train 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_alpha_train(self, flag: List = [True, True]) -> None:
         self.alpha_train = flag
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.alpha_train = flag
 
-    # [中文注释] 设置或更新 skip_path 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_skip_path(self, flag: bool = True) -> None:
         self.skip_path = flag
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.skip_path = flag
 
-    # [中文注释] 设置或更新 skip_meta 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_skip_meta(self, flag: bool = False) -> None:
         self.skip_meta = flag
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.skip_meta = flag
 
-    # [中文注释] 设置或更新 scale_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_scale_mode(self, mode: str = "bilinear") -> None:
         self.scale_mode = mode
         for m in self.modules():
             if isinstance(m, self._conv_types):
                 m.scale_mode = mode
 
-    # [中文注释] 设置或更新 encode_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_encode_mode(self, mode: str = "mag") -> None:
         self.encode_mode = mode
         for m in self.modules():
@@ -2497,7 +2402,6 @@ class MetaConv1dETE(Meta_Layer_BASE):
                 m.encode_mode = mode
 
     @property
-    # [中文注释] 实现 _weight 功能；请结合调用处确认输入、输出和状态变化。
     def _weight(self):
         # control pads to complex transfer matrix
         # [p, q, n_pads] real -> [p, q, k, k] complex
@@ -2508,7 +2412,6 @@ class MetaConv1dETE(Meta_Layer_BASE):
         return weights
 
     @property
-    # [中文注释] 实现 _weight_unroll 功能；请结合调用处确认输入、输出和状态变化。
     def _weight_unroll(self):
         weights = []
         for m in self.modules():
@@ -2517,7 +2420,6 @@ class MetaConv1dETE(Meta_Layer_BASE):
         return weights
 
     @property
-    # [中文注释] 实现 _weight_complex 功能；请结合调用处确认输入、输出和状态变化。
     def _weight_complex(self):
         weights = []
         for m in self.modules():
@@ -2525,7 +2427,6 @@ class MetaConv1dETE(Meta_Layer_BASE):
                 weights.append(m.build_weight(m._build_weight()))
         return weights
 
-    # [中文注释] 实现 _forward_impl 功能；请结合调用处确认输入、输出和状态变化。
     def _forward_impl(self, x):
         y = self._conv_pos(x) # y is now a tuple, containing the light collected in the receiver as well as the inner field injected into the metasurfaces
         if self._conv_neg is not None:
@@ -2536,7 +2437,6 @@ class MetaConv1dETE(Meta_Layer_BASE):
             y = y + self.bias[None, :, None]
         return y # y is a tuple.
 
-    # [中文注释] 读取并返回 output_dim 相关状态；核对返回值形状、单位和数据类型。
     def get_output_dim(self, img_height: int, img_width: int) -> Tuple[int, int]:
         h_out = (img_height - self.kernel_size[0] + 2 * self.padding[0]) / self.stride[
             0
@@ -2546,7 +2446,6 @@ class MetaConv1dETE(Meta_Layer_BASE):
         ] + 1
         return (int(h_out), int(w_out))
 
-    # [中文注释] 执行前向计算；跟踪输入/输出张量形状、复数运算和可微计算路径。
     def forward(self, x):
         assert isinstance(x, tuple), "input x should be a tuple"
         if self.in_bit <= 8:
@@ -2558,15 +2457,12 @@ class MetaConv1dETE(Meta_Layer_BASE):
 
         return out # now this out is a tuple, containing the light collected in the receiver as well as the inner field injected into the metasurfaces
     
-    # [中文注释] 设置或更新 test_mode 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_test_mode(self, test_mode: bool = True):
         self._conv_pos.set_test_mode(test_mode)
 
-    # [中文注释] 设置或更新 near2far_matrix 相关状态；注意是否影响缓存、优化变量或响应矩阵。
     def set_near2far_matrix(self, near2far_matrix: Tensor):
         self._conv_pos.set_near2far_matrix(near2far_matrix)
 
-    # [中文注释] 实现 extra_repr 功能；请结合调用处确认输入、输出和状态变化。
     def extra_repr(self):
         s = (
             "{in_channels}, {mid_channels}, {out_channels}, kernel_size={kernel_size}"

@@ -1,3 +1,7 @@
+# 中文学习注释：MAPS/Ceviche 第三方核心依赖阅读辅助。未改变上游算法、参数或执行逻辑。
+# 模块定位：thirdparty/MAPS_old/thirdparty/ceviche/fdfd.py。重点追踪 Maxwell 离散、线性系统、边界/源项、伴随导数及结构参数化。
+# 注意：这里的注释是学习说明，不代表上游项目作者原始注释。
+
 import autograd.numpy as npa
 from numpy import indices
 import scipy.sparse as sp
@@ -10,9 +14,11 @@ from .utils import get_entries_indices
 # notataion is similar to that used in: https://www.jpier.org/ac_api/download.php?id=11092006
 
 
+# [中文注释] 定义 fdfd 类，封装电磁求解/优化相关状态。
 class fdfd:
     """Base class for FDFD simulation"""
 
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, omega, dL, eps_r, npml, bloch_phases=None):
         """initialize with a given structure and source
         omega: angular frequency (rad/s)
@@ -35,11 +41,13 @@ class fdfd:
     """ what happens when you reassign the permittivity of the fdfd object """
 
     @property
+    # [中文注释] 实现 eps_r；结合调用处核对物理量、网格维度、边界条件和单位。
     def eps_r(self):
         """Returns the relative permittivity grid"""
         return self._eps_r
 
     @eps_r.setter
+    # [中文注释] 实现 eps_r；结合调用处核对物理量、网格维度、边界条件和单位。
     def eps_r(self, new_eps):
         """Defines some attributes when eps_r is set."""
         self._save_shape(new_eps)
@@ -47,10 +55,12 @@ class fdfd:
 
     """ classes inherited from fdfd() must implement their own versions of these functions for `fdfd.solve()` to work """
 
+    # [中文注释] 实现 _make_A；结合调用处核对物理量、网格维度、边界条件和单位。
     def _make_A(self, eps_r):
         """This method constucts the entries and indices into the system matrix"""
         raise NotImplementedError("need to make a _make_A() method")
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def _solve_fn(self, entries_a, indices_a, source_vec):
         """This method takes the system matrix and source and returns the x, y, and z field components"""
         raise NotImplementedError(
@@ -59,6 +69,7 @@ class fdfd:
 
     """ You call this to function to solve for the electromagnetic fields """
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def solve(self, source_z):
         """Outward facing function (what gets called by user) that takes a source grid and returns the field components"""
 
@@ -83,6 +94,7 @@ class fdfd:
 
     """ Utility functions for FDFD object """
 
+    # [中文注释] 构造离散导数/Jacobian 算子，为场求解或伴随梯度提供数值基础。
     def _setup_derivatives(self):
         """Makes the sparse derivative matrices and does some processing for ease of use"""
 
@@ -124,6 +136,7 @@ class fdfd:
                 self.entries_Dzb, self.indices_Dzb, vec
             )
 
+    # [中文注释] 实现 _setup_bloch_phases；结合调用处核对物理量、网格维度、边界条件和单位。
     def _setup_bloch_phases(self, bloch_phases):
         """Saves the x y and z bloch phases based on list of them 'bloch_phases'"""
 
@@ -137,14 +150,17 @@ class fdfd:
             if len(bloch_phases) > 2:
                 self.bloch_z = bloch_phases[2]
 
+    # [中文注释] 实现 _vec_to_grid；结合调用处核对物理量、网格维度、边界条件和单位。
     def _vec_to_grid(self, vec):
         """converts a vector quantity into an array of the shape of the FDFD simulation"""
         return npa.reshape(vec, self.shape)
 
+    # [中文注释] 实现 _grid_to_vec；结合调用处核对物理量、网格维度、边界条件和单位。
     def _grid_to_vec(self, grid):
         """converts a grid of the shape of the FDFD simulation to a flat vector"""
         return grid.flatten()
 
+    # [中文注释] 实现 _save_shape；结合调用处核对物理量、网格维度、边界条件和单位。
     def _save_shape(self, grid):
         """Sores the shape and size of `grid` array to the FDFD object"""
         self.shape = grid.shape
@@ -156,12 +172,14 @@ class fdfd:
         self.N = np.prod(self.shape)
 
     @staticmethod
+    # [中文注释] 实现 _default_val；结合调用处核对物理量、网格维度、边界条件和单位。
     def _default_val(val, default_val=None):
         # not used yet
         return val if val is not None else default_val
 
     """ Field conversion functions for 2D.  Function names are self explanatory """
 
+    # [中文注释] 实现 _Ex_Ey_to_Hz；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Ex_Ey_to_Hz(self, Ex_vec, Ey_vec):
         return (
             1
@@ -171,18 +189,22 @@ class fdfd:
             * (self.sp_mult_Dxb(Ey_vec) - self.sp_mult_Dyb(Ex_vec))
         )
 
+    # [中文注释] 实现 _Ez_to_Hx；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Ez_to_Hx(self, Ez_vec):
         return -1 / 1j / self.omega / MU_0 * self.sp_mult_Dyb(Ez_vec)
 
+    # [中文注释] 实现 _Ez_to_Hy；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Ez_to_Hy(self, Ez_vec):
         return 1 / 1j / self.omega / MU_0 * self.sp_mult_Dxb(Ez_vec)
 
+    # [中文注释] 实现 _Ez_to_Hx_Hy；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Ez_to_Hx_Hy(self, Ez_vec):
         Hx_vec = self._Ez_to_Hx(Ez_vec)
         Hy_vec = self._Ez_to_Hy(Ez_vec)
         return Hx_vec, Hy_vec
 
     # addition of 1e-5 is for numerical stability when tracking gradients of eps_xx, and eps_yy -> 0
+    # [中文注释] 实现 _Hz_to_Ex；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Hz_to_Ex(self, Hz_vec, eps_vec_xx):
         return (
             1
@@ -193,6 +215,7 @@ class fdfd:
             * self.sp_mult_Dyf(Hz_vec)
         )
 
+    # [中文注释] 实现 _Hz_to_Ey；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Hz_to_Ey(self, Hz_vec, eps_vec_yy):
         return (
             -1
@@ -203,6 +226,7 @@ class fdfd:
             * self.sp_mult_Dxf(Hz_vec)
         )
 
+    # [中文注释] 实现 _Hx_Hy_to_Ez；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Hx_Hy_to_Ez(self, Hx_vec, Hy_vec, eps_vec_zz):
         return (
             1
@@ -213,6 +237,7 @@ class fdfd:
             * (self.sp_mult_Dxf(Hy_vec) - self.sp_mult_Dyf(Hx_vec))
         )
 
+    # [中文注释] 实现 _Hz_to_Ex_Ey；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Hz_to_Ex_Ey(self, Hz_vec, eps_vec_xx, eps_vec_yy):
         Ex_vec = self._Hz_to_Ex(Hz_vec, eps_vec_xx)
         Ey_vec = self._Hz_to_Ey(Hz_vec, eps_vec_yy)
@@ -222,12 +247,15 @@ class fdfd:
 """ These are the fdfd classes that you'll actually want to use """
 
 
+# [中文注释] 定义 fdfd_ez 类，封装电磁求解/优化相关状态。
 class fdfd_ez(fdfd):
     """FDFD class for linear Ez polarization"""
 
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, omega, dL, eps_r, npml, bloch_phases=None):
         super().__init__(omega, dL, eps_r, npml, bloch_phases=bloch_phases)
 
+    # [中文注释] 实现 _make_A；结合调用处核对物理量、网格维度、边界条件和单位。
     def _make_A(self, eps_vec):
         C = -1 / MU_0 * self.Dxf.dot(self.Dxb) - 1 / MU_0 * self.Dyf.dot(self.Dyb)
         entries_c, indices_c = get_entries_indices(C)
@@ -241,6 +269,7 @@ class fdfd_ez(fdfd):
 
         return entries_a, indices_a
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def _solve_fn(self, eps_vec, entries_a, indices_a, Jz_vec):
         b_vec = 1j * self.omega * Jz_vec
         Ez_vec = sp_solve(entries_a, indices_a, b_vec)
@@ -248,12 +277,15 @@ class fdfd_ez(fdfd):
         return Hx_vec, Hy_vec, Ez_vec
 
 
+# [中文注释] 定义 fdfd_hz 类，封装电磁求解/优化相关状态。
 class fdfd_hz(fdfd):
     """FDFD class for linear Ez polarization"""
 
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, omega, dL, eps_r, npml, bloch_phases=None):
         super().__init__(omega, dL, eps_r, npml, bloch_phases=bloch_phases)
 
+    # [中文注释] 实现 _grid_average_2d；结合调用处核对物理量、网格维度、边界条件和单位。
     def _grid_average_2d(self, eps_vec):
         eps_grid = self._vec_to_grid(eps_vec)
         eps_grid_xx = 1 / 2 * (eps_grid + npa.roll(eps_grid, axis=1, shift=1))
@@ -264,6 +296,7 @@ class fdfd_hz(fdfd):
         eps_vec_yy = eps_vec_yy
         return eps_vec_xx, eps_vec_yy
 
+    # [中文注释] 实现 _make_A；结合调用处核对物理量、网格维度、边界条件和单位。
     def _make_A(self, eps_vec):
         eps_vec_xx, eps_vec_yy = self._grid_average_2d(eps_vec)
         eps_vec_xx_inv = 1 / (eps_vec_xx + 1e-5)  # the 1e-5 is for numerical stability
@@ -297,6 +330,7 @@ class fdfd_hz(fdfd):
 
         return entries_a, indices_a
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def _solve_fn(self, eps_vec, entries_a, indices_a, Mz_vec):
         b_vec = 1j * self.omega * Mz_vec  # needed so fields are SI units
         Hz_vec = sp_solve(entries_a, indices_a, b_vec)
@@ -308,6 +342,7 @@ class fdfd_hz(fdfd):
         return Ex_vec, Ey_vec, Hz_vec
 
 
+# [中文注释] 定义 fdfd_mf_ez 类，封装电磁求解/优化相关状态。
 class fdfd_mf_ez(fdfd):
     """FDFD class for multifrequency linear Ez polarization. New variables:
     omega_mod: angular frequency of modulation (rad/s)
@@ -317,6 +352,7 @@ class fdfd_mf_ez(fdfd):
     This is not the same as the number of modulation frequencies Nfreq. For physically meaningful results, Nsb >= Nfreq.
     """
 
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(
         self, omega, dL, eps_r, omega_mod, delta, phi, Nsb, npml, bloch_phases=None
     ):
@@ -326,6 +362,7 @@ class fdfd_mf_ez(fdfd):
         self.phi = phi
         self.Nsb = Nsb
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def solve(self, source_z):
         """Outward facing function (what gets called by user) that takes a source grid and returns the field components"""
         # flatten the permittivity and source grid
@@ -349,6 +386,7 @@ class fdfd_mf_ez(fdfd):
 
         return Fx, Fy, Fz
 
+    # [中文注释] 实现 _make_A；结合调用处核对物理量、网格维度、边界条件和单位。
     def _make_A(self, eps_vec, delta_matrix, phi_matrix):
         """Builds the multi-frequency electromagnetic operator A in Ax = b"""
         M = 2 * self.Nsb + 1
@@ -397,6 +435,7 @@ class fdfd_mf_ez(fdfd):
 
         return entries_a, indices_a
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def _solve_fn(self, eps_vec, entries_a, indices_a, Jz_vec):
         """Multi-frequency version of _solve_fn() defined in fdfd_ez"""
         M = 2 * self.Nsb + 1
@@ -409,6 +448,7 @@ class fdfd_mf_ez(fdfd):
         Hx_vec, Hy_vec = self._Ez_to_Hx_Hy(Ez_vec)
         return Hx_vec, Hy_vec, Ez_vec
 
+    # [中文注释] 实现 _Ez_to_Hx；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Ez_to_Hx(self, Ez_vec):
         """Multi-frequency version of _Ez_to_Hx() defined in fdfd"""
         M = 2 * self.Nsb + 1
@@ -417,6 +457,7 @@ class fdfd_mf_ez(fdfd):
         entries_Dyb_mf, indices_Dyb_mf = get_entries_indices(Dyb_mf)
         return -1 / 1j / MU_0 * sp_mult(entries_Dyb_mf, indices_Dyb_mf, Ez_vec)
 
+    # [中文注释] 实现 _Ez_to_Hy；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Ez_to_Hy(self, Ez_vec):
         """Multi-frequency version of _Ez_to_Hy() defined in fdfd"""
         M = 2 * self.Nsb + 1
@@ -425,12 +466,14 @@ class fdfd_mf_ez(fdfd):
         entries_Dxb_mf, indices_Dxb_mf = get_entries_indices(Dxb_mf)
         return 1 / 1j / MU_0 * sp_mult(entries_Dxb_mf, indices_Dxb_mf, Ez_vec)
 
+    # [中文注释] 实现 _Ez_to_Hx_Hy；结合调用处核对物理量、网格维度、边界条件和单位。
     def _Ez_to_Hx_Hy(self, Ez_vec):
         """Multi-frequency version of _Ez_to_Hx_Hy() defined in fdfd"""
         Hx_vec = self._Ez_to_Hx(Ez_vec)
         Hy_vec = self._Ez_to_Hy(Ez_vec)
         return Hx_vec, Hy_vec
 
+    # [中文注释] 实现 _vec_to_grid；结合调用处核对物理量、网格维度、边界条件和单位。
     def _vec_to_grid(self, vec):
         """Multi-frequency version of _vec_to_grid() defined in fdfd"""
         # grid shape has Nx*Ny cells per frequency sideband
@@ -438,12 +481,15 @@ class fdfd_mf_ez(fdfd):
         return npa.reshape(vec, grid_shape)
 
 
+# [中文注释] 定义 fdfd_ez_3d 类，封装电磁求解/优化相关状态。
 class fdfd_ez_3d(fdfd):
     """3D FDFD class (work in progress)"""
 
+    # [中文注释] 初始化求解器或优化对象；核对网格、材料、边界和设备参数。
     def __init__(self, omega, dL, eps_r, npml, bloch_phases=None):
         super().__init__(omega, dL, eps_r, npml, bloch_phases=bloch_phases)
 
+    # [中文注释] 实现 _grid_average_3d；结合调用处核对物理量、网格维度、边界条件和单位。
     def _grid_average_3d(self, eps_vec, dir: str):
         ## Input Parameters
         # center_array: 3D array of values defined at cell centers
@@ -465,6 +511,7 @@ class fdfd_ez_3d(fdfd):
         avg_array = (center_shifted + eps) / 2
         return avg_array.flatten()
 
+    # [中文注释] 实现 _make_A；结合调用处核对物理量、网格维度、边界条件和单位。
     def _make_A(self, eps_vec):
         # curlE and curlH
         Ce = sp.bmat(
@@ -491,6 +538,7 @@ class fdfd_ez_3d(fdfd):
 
         return entries_a, indices_a
 
+    # [中文注释] 求解离散 Maxwell 线性系统；检查矩阵、右端项、求解器及残差。
     def _solve_fn(self, eps_vec, entries_a, indices_a, Jz_vec):
         # convert the Mz current into Jx, Jy
         b_vec = 1j * self.omega * Jz_vec
